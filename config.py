@@ -69,7 +69,7 @@ elif _config['userlist']:
 """ Read Configuration from command line """
 _parser = argparse.ArgumentParser(prog="Campus Network Fucker")
 
-_parser.add_argument("-n", "--interface", help="network interface name")
+_parser.add_argument("-i", "--interface", help="network interface name")
 _parser.add_argument("-m", "--module", help="authentication module")
 
 _parser.add_argument("-u", "--username", help="username used in authentication")
