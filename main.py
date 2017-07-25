@@ -1,15 +1,34 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
+import argparse
 import selectors
 
+import packets.standard
+import packets.rj
 import protocol
 import transport
-import packets.standard
+
+
+config = {}
+config['user'] = {}
+
+parser = argparse.ArgumentParser(prog="Campus Network Fucker")
+parser.add_argument("-u", help="username used in authentication")
+parser.add_argument("-p", help="password used in authentication")
+parser.add_argument("-n", help="network interface name")
+args = parser.parse_args()
+
+if 'u' in args:
+    config['user']['username'] = args.u.encode()
+if 'p' in args:
+    config['user']['password'] = args.p.encode()
+if 'n' in args:
+    config['nic'] = args.n
+
 
 eventloop = selectors.DefaultSelector()
 
-config = {}
 
 parsers = {}
 parsers['top'  ] = []
@@ -21,10 +40,13 @@ builders['ether' ] = []
 builders['8021x' ] = []
 builders['bottom'] = []
 
-
 packets.standard.init(parsers, builders)
-rj_protocol = protocol.EapProtocol(config)
-raw_transport = transport.RawTransport('enp3s0', parsers, builders, rj_protocol, eventloop)
+packets.rj.init(parsers, builders)
+
+
+eap_protocol = protocol.EapProtocol(config)
+raw_transport = transport.RawTransport(config['nic'], parsers, builders, eap_protocol, eventloop)
+
 
 while True:
     results = eventloop.select()
