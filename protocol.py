@@ -36,13 +36,13 @@ class EapProtocol():
 
         frames['ether'] = {}
         frames['ether']['destination'] = b'\x01\xd0\xf8\x00\x00\x03'
-        frames['ether']['source']      = self.transport.get_address()
-        frames['ether']['protocol']    = b'\x88\x8E'
+        frames['ether']['source'     ] = self.transport.get_address()
+        frames['ether']['protocol'   ] = b'\x88\x8E'
 
         frames['8021x'] = {}
         frames['8021x']['version'] = b'\x01'
-        frames['8021x']['type']    = b'\x01'
-        frames['8021x']['length']  = b'\x0000'
+        frames['8021x']['type'   ] = b'\x01'
+        frames['8021x']['length' ] = b'\x0000'
 
         self.transport.send_data(frames)
 

@@ -14,7 +14,7 @@ Parameter 'frames' contain key-value pairs,
 which are infos being parsed from packets or used to build packets.
 The values in key-value pairs should be 'bytes' or 'bytearray'.
 Return value indicate further action,
-if None is returned, then the parsing or building process completes.
+if 'None' is returned, then the parsing or building process completes.
 """
 
 
