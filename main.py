@@ -6,7 +6,7 @@ import selectors
 
 import packets.standard
 import packets.rj
-import protocol
+import protocols
 import transport
 
 
@@ -44,8 +44,8 @@ packets.standard.init(parsers, builders)
 packets.rj.init(parsers, builders)
 
 
-eap_protocol = protocol.EapProtocol(config)
-raw_transport = transport.RawTransport(config['nic'], parsers, builders, eap_protocol, eventloop)
+protocol = protocols.RuijieProtocol(config)
+raw_transport = transport.RawTransport(config['nic'], parsers, builders, protocol, eventloop)
 
 
 while True:

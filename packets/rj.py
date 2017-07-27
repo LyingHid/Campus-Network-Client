@@ -1,6 +1,8 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
+import hashlib
+
 
 def init(parsers, builders):
     parsers['eapol'].append(rj_eapol_parser)
@@ -13,7 +15,7 @@ def rj_eapol_parser(frames):
 
 def rj_ether_builder(frames):
     private = rj_private_builder(frames)
-    frames['ether']['payload'] += private
+    frames['raw']['payload'] += private
 
 
 def rj_private_builder(frames):
@@ -58,7 +60,7 @@ def rj_private_builder(frames):
     # ?
     # 0x004556e7 ~ 0x004556f3
     # EAPOLFrame+0x6c0:1
-    private += b'\x00'  # ? first packet '\x00', then '\xd0'
+    private += b'\x00'  # ? first packet '\x00', then '\xd0', uninitialized data
 
     private += b'\x00\x00\x13\x11'
 
@@ -84,12 +86,57 @@ def rj_private_builder(frames):
     # 0x004557fa ~ 0x00455811
     private += frames['ether']['source']
 
-    private += b'\x1a\x08'
+    private += b'\x1a'
+
+    md5_anchor1 = len(private)
+
+    private += b'\x08'  # updated in state 'response md5 challenge'
+
     private += b'\x00\x00\x13\x11'
-    private += b'\x2f\x02'
+    private += b'\x2f'
+
+    md5_anchor2 = len(private)
+
+    private += b'\x02'  # updated in state 'response md5 challenge'
+
+    # md5 challenge branch
+    if 'eapol' in frames and frames['eapol']['type'] == b'\x04':
+        # TODO: further analysis on 'r13'
+        # 0x00455866 ~ 0x00455983
+        # RadiusEncrpytPwd
+        # (
+        #     unsigned char *challenge,
+        #     unsigned int challenge_length,
+        #     unsigned char *username,       // filled with b'\x00'
+        #     unsigned int username_length,  // ceil to align on 4 bits
+        #     unsigned char result*
+        # )
+        # ( md5( username, challenge ) ^ password )[0 : 16]
+        field = bytearray()
+        field += frames['ruijie']['username']  # username
+        field += frames['ruijie']['md5 value']  # md5 challenge
+
+        password_length = len(frames['ruijie']['password'])
+
+        md5 = hashlib.md5()
+        md5.update(field)
+        field = bytearray(md5.digest())
+
+        for i in range(min(16, password_length)):
+            field[i] ^= frames['ruijie']['password'][i]
+
+        private += field
+
+        # 0x00455988 ~ 0x0045599a
+        # password_length += 0x0000000F
+        # password_length &= 0xFFFFFFF0
+        private[md5_anchor1] += 16  # password_length
+        private[md5_anchor2] += 16  # password_length
 
     # secondary dns
     # 0x004559ed ~ 0x00455a88
+    # sym.get_alternate_dns
+    # cat /etc/resolv.conf 2>&- | awk '{if ($1=="nameserver") {print $2}}' | awk 'NR>1'
     field = b'202.114.0.242'  # if no 2nd dns exists, " field = b'' "
     private += b'\x1a'
     private += (len(field) + 8).to_bytes(1, byteorder='big')
@@ -171,6 +218,7 @@ def rj_private_builder(frames):
     private += b'\x54\x42'
 
     # ?
+    # 0x00455f82 ~ 0x00456005
     # CtrlThread+0x10f0:8 (pointer to ? string)
     # seems to be constant
     private += b'9QF4M1YR\x00\x00\x00\x00\x00\x00\x00\x00'
@@ -178,13 +226,12 @@ def rj_private_builder(frames):
     private += b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
     private += b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
 
-    private += b'\x1a'
-
     # ?
     # 0x0045600f ~ 0x0045611f
     # CtrlThread+0x4d8:8 (pointer to ? string)
     # strlen + 8
     # seems to be constant
+    private += b'\x1a'
     private += b'\x08'
     private += b'\x00\x00\x13\x11'
     private += b'\x55'
@@ -195,7 +242,11 @@ def rj_private_builder(frames):
 
     private += b'\x1a\x09'
     private += b'\x00\x00\x13\x11'
-    private += b'\x62\x03\x00'
+    private += b'\x62\x03'
+
+    # branch @ 0x00456179
+    # the result is same
+    private += b'\x00'
 
     private += b'\x1a\x09'
     private += b'\x00\x00\x13\x11'

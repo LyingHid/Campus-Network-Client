@@ -74,9 +74,10 @@ class EapProtocol():
         frames['ether']['source'     ] = dst_mac
         frames['ether']['destination'] = src_mac
 
-        frames['eapol']['code'          ] = b'\x02'
-        frames['eapol']['md5 value'     ] = md5.digest()
-        frames['eapol']['md5 extra data'] = self.config['user']['username']
+        frames['eapol']['code'] = b'\x02'
+        frames['eapol']['md5 value'] = md5.digest()
+        if 'md5 extra data' in frames['eapol']:
+            frames['eapol']['md5 extra data'] = self.config['user']['username']
 
         self.transport.send_data(frames)
 
@@ -89,3 +90,14 @@ class EapProtocol():
 
     def response_failure(self, frames):
         print('oh no')
+
+
+class RuijieProtocol(EapProtocol):
+    def response_md5_challenge(self, frames):
+        frames['eapol']['md5 extra data'] = self.config['user']['username']
+        frames['ruijie'] = {}
+        frames['ruijie']['md5 value'] = frames['eapol']['md5 value']
+        frames['ruijie']['username'] = self.config['user']['username']
+        frames['ruijie']['password'] = self.config['user']['password']
+
+        EapProtocol.response_md5_challenge(self, frames)
