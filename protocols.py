@@ -6,7 +6,7 @@ import hashlib
 
 class EapProtocol():
     def __init__(self, config):
-        self.config    = config
+        self.config = config
         self.transport = None
 
 
@@ -85,19 +85,42 @@ class EapProtocol():
 
 
     def response_success(self, frames):
-        print('nice')
+        print('authentication successed')
 
 
     def response_failure(self, frames):
-        print('oh no')
+        print('authentication failed')
 
 
 class RuijieProtocol(EapProtocol):
+    def __init__(self, config):
+        EapProtocol.__init__(self, config)
+
+        self.round = 0
+
+
+    def connection_made(self, transport):
+        self.round = 1
+
+        EapProtocol.connection_made(self, transport)
+
+
     def response_md5_challenge(self, frames):
         frames['eapol']['md5 extra data'] = self.config['user']['username']
-        frames['ruijie'] = {}
-        frames['ruijie']['md5 value'] = frames['eapol']['md5 value']
         frames['ruijie']['username'] = self.config['user']['username']
         frames['ruijie']['password'] = self.config['user']['password']
 
         EapProtocol.response_md5_challenge(self, frames)
+
+
+    def response_success(self, frames):
+        if self.round <= 1:
+            self.round += 1
+            # TODO: dhcp and ip info
+            self.start_eapol()
+        else:
+            EapProtocol.response_success(self, frames)
+
+            print('notice')
+            print(frames['ruijie']['notice'].decode('gbk').replace('\r\n', '\n'))
+            quit(0)

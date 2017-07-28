@@ -5,7 +5,7 @@ import argparse
 import selectors
 
 import packets.standard
-import packets.rj
+import packets.ruijie
 import protocols
 import transport
 
@@ -41,7 +41,7 @@ builders['8021x' ] = []
 builders['bottom'] = []
 
 packets.standard.init(parsers, builders)
-packets.rj.init(parsers, builders)
+packets.ruijie.init(parsers, builders)
 
 
 protocol = protocols.RuijieProtocol(config)

@@ -5,20 +5,85 @@ import hashlib
 
 
 def init(parsers, builders):
-    parsers['eapol'].append(rj_eapol_parser)
-    builders['ether'].append(rj_ether_builder)
+    parsers['eapol'].append(ruijie_eapol_parser)
+    builders['ether'].append(ruijie_ether_builder)
 
 
-def rj_eapol_parser(frames):
-    pass
+def ruijie_eapol_parser(frames):
+    frames['ruijie'] = {}
+
+    if frames['eapol']['code'] == b'\x01':
+        if frames['eapol']['type'] == b'\x04':
+            frames['ruijie']['md5 value'] = frames['eapol']['md5 value']
+
+            # md5 extra data contains service list
+            # services are joined by '@'
+            index = frames['eapol']['md5 extra data'].find(b'\x00\x00\x13\x11\x66')
+            index += 5
+            length = frames['eapol']['md5 extra data'][index]
+            index += 1
+            services = frames['eapol']['md5 extra data'][index : index + length]
+            services = services.split(b'@')
+
+            frames['ruijie']['services'] = services
+
+    elif frames['eapol']['code'] == b'\x03':
+        index = 4  # location at extra data
+
+        # 0x00001311 length:2 string:length
+        index += 4  # location at strng length
+        length = int.from_bytes(frames['8021x']['payload'][index : index + 2], byteorder='big')
+        index += 2  # location at string
+        notice = frames['8021x']['payload'][index : index + length]
+
+        frames['ruijie']['notice'] = notice
+
+        # TODO: fully understand 'success' frame
+        # errors exist in the following comments
+        # 0x00001311 xxxx content xxxx
+        # xxxx valid content length
+        #
+        # 0x00001311 xx xx
+        # xx xx EAPOLFrame+0x63c 0x63d
+        #
+        # 0x00001311 xx xx yy:15
+        # xx xx EAPOLFrame+0x644 0x645
+        # yy:15 encoded
+        #     0x00001311 xx xx yyyyyyyy zzzzzzzz uu
+        #     00001311 EAPOLFrame+0x648
+        #     xx xx EAPOLFrame+0x64c 0x64d
+        #     yyyyyyyy EAPOLFrame+0x650 (mentohust echo key)
+        #     zzzzzzzz*0x3e8 EAPOLFrame+0x654
+        #     uu EAPOLFrame+0x658
+        #
+        # 0x00001311 56 06 yyyyyyyy
+        # 56 06 switch_case+0x37 length+2
+        # yyyyyyyy auto_reconnect CtrlThread+0x33e 0x340
+        #
+        # 0x00001311 5a 06 yyyyyyyy
+        # 5a 06 switch_case+0x37 length+2
+        # yyyyyyyy indicate_port CtrlThread+0x404
+        #
+        # 0x00001311 5b 06 yyyyyyy
+        # 5b 06 switch_case+0x37 length+2
+        # yyyyyyyy indicate_serv_ip CtrlThread+0x404
+        #
+        # 0x00001311 5c 0a yyyyyyyyyyyyyyyy
+        # 0x00457c3b ~ 0x00457d0d
+        #
+        # 0x00001311 5e 0a yyyyyyyyyyyyyyyy
+        # 0x00457b27 ~ 0x00457bf4
+        #
+        # 0x00001311 6e 06 yyyyyyyyyyyy
+        # yyyyyyyyyyyy server utc time
 
 
-def rj_ether_builder(frames):
-    private = rj_private_builder(frames)
+def ruijie_ether_builder(frames):
+    private = ruijie_private_builder(frames)
     frames['raw']['payload'] += private
 
 
-def rj_private_builder(frames):
+def ruijie_private_builder(frames):
     """ Simulate RuiJie's function 'AppendPrivateProperty'
     AppendPrivateProperty(uchar *packet, int &next_index, EAPOLFrame *frame)
     '0x00001311' should be RuiJie's vender id
