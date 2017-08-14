@@ -10,72 +10,128 @@ def init(parsers, builders):
 
 
 def ruijie_eapol_parser(frames):
+    """ Simulate RuiJie's function 'ParsePrivateProperty'
+    ParsePrivateProperty(uchar *packet, int next_index, EAPOLFrame *frame)
+    '0x00001311' should be RuiJie's vender id
+    """
+
     frames['ruijie'] = {}
 
     if frames['eapol']['code'] == b'\x01':
         if frames['eapol']['type'] == b'\x04':
+            # 'md5 value' will be used to build private frame
             frames['ruijie']['md5 value'] = frames['eapol']['md5 value']
+
+            index = 4
+
+            # if frames['eapol']['md5 extra data'][index : index + 3] == b'\x2e\x03\x01':
+            #     pass
+            index += 3
 
             # md5 extra data contains service list
             # services are joined by '@'
-            index = frames['eapol']['md5 extra data'].find(b'\x00\x00\x13\x11\x66')
-            index += 5
-            length = frames['eapol']['md5 extra data'][index]
-            index += 1
-            services = frames['eapol']['md5 extra data'][index : index + length]
-            services = services.split(b'@')
+            if frames['eapol']['md5 extra data'][index : index + 5] == b'\x00\x00\x13\x11\x66':
+                index += 5
+                length = frames['eapol']['md5 extra data'][index]
+                index += 1
+                services = frames['eapol']['md5 extra data'][index : index + length]
+                services = services.split(b'@')
 
-            frames['ruijie']['services'] = services
+                frames['ruijie']['services'] = services
 
     elif frames['eapol']['code'] == b'\x03':
         index = 4  # location at extra data
 
+        # notification (gbk encode)
         # 0x00001311 length:2 string:length
+        # 0x00457032 ~ 0x004570d0
+        # EAPOLFrame+0x38:4 vendor id 0x00001311
+        # EAPOLFrame+0x3e:0x5dc utf-8 string
         index += 4  # location at strng length
         length = int.from_bytes(frames['8021x']['payload'][index : index + 2], byteorder='big')
         index += 2  # location at string
         notice = frames['8021x']['payload'][index : index + length]
 
         frames['ruijie']['notice'] = notice
+        index += length
 
-        # TODO: fully understand 'success' frame
-        # errors exist in the following comments
-        # 0x00001311 xxxx content xxxx
+        # 0x00001311 0x0069 content:0x0069
+        # 0x004570d5 ~
+        # EAPOLFrame+0x620:4 vendor id 0x00001311
+        # EAPOLFrame+0x62c:4 first dword of content
         # xxxx valid content length
-        #
+
+        # 0x00001311 01 00
+        # passed
+
         # 0x00001311 xx xx
+        # 0x004570e0 ~ 0x00457196
         # xx xx EAPOLFrame+0x63c 0x63d
-        #
-        # 0x00001311 xx xx yy:15
+
+        # 0x00001311 xx xx encoded:15
+        # 0x004571ab ~ 0x00457205
+        # EAPOLFrame+0x640:4 vendor id 0x00001311
         # xx xx EAPOLFrame+0x644 0x645
-        # yy:15 encoded
-        #     0x00001311 xx xx yyyyyyyy zzzzzzzz uu
-        #     00001311 EAPOLFrame+0x648
-        #     xx xx EAPOLFrame+0x64c 0x64d
-        #     yyyyyyyy EAPOLFrame+0x650 (mentohust echo key)
-        #     zzzzzzzz*0x3e8 EAPOLFrame+0x654
-        #     uu EAPOLFrame+0x658
-        #
+        # encoded
+        # 0x00001311 xx xx yyyyyyyy zzzzzzzz uu
+        # 0x0045721a ~
+        # EAPOLFrame+0x648:4 vendor id 0x00001311
+        # xx xx EAPOLFrame+0x64c 0x64d
+        # yyyyyyyy EAPOLFrame+0x650 (mentohust echo key)
+        # zzzzzzzz*0x3e8 EAPOLFrame+0x654
+        # uu EAPOLFrame+0x658
+
+        # reach optional switch case
+        # 0x0045730e ~ 0x00457354
+
         # 0x00001311 56 06 yyyyyyyy
         # 56 06 switch_case+0x37 length+2
+        # ? 计费提示
         # yyyyyyyy auto_reconnect CtrlThread+0x33e 0x340
-        #
+
         # 0x00001311 5a 06 yyyyyyyy
         # 5a 06 switch_case+0x37 length+2
         # yyyyyyyy indicate_port CtrlThread+0x404
-        #
+
         # 0x00001311 5b 06 yyyyyyy
         # 5b 06 switch_case+0x37 length+2
-        # yyyyyyyy indicate_serv_ip CtrlThread+0x404
-        #
+        # yyyyyyyy indicate_serv_ip CtrlThread+0x400
+
         # 0x00001311 5c 0a yyyyyyyyyyyyyyyy
+        # 5c 08 switch_case+0x37 length+2
+        # RC4(
+        #     yyyyyyyyyyyyyyyy,
+        #     rsp+0x30:10,  // result
+        #     com.ruijie.www", // rsp+0x20:15, including '\0'
+        #     8
+        # )
+        # stored in CtrlThread+0x410:8
+        # encrypt key
         # 0x00457c3b ~ 0x00457d0d
-        #
-        # 0x00001311 5e 0a yyyyyyyyyyyyyyyy
+
+        # 0x00001311 5d 0a yyyyyyyyyyyyyyyy
+        # 5d 0a switch_case+0x37 length+2
+        # RC4(
+        #     yyyyyyyyyyyyyyyy,
+        #     rsp+0x30:10,  // result
+        #     com.ruijie.www", // rsp+0x20:15, including '\0'
+        #     8
+        # )
+        # stored in CtrlThread+0x418:8
+        # encrypt iv
         # 0x00457b27 ~ 0x00457bf4
-        #
+
+        # 0x00001311 5e 0a yyyyyyyyyyyyyyyy
+        # 5e 0a switch_case+0x37 length+2
+        # yyyyyyyyyyyyyyyy server utc time CtrlThread+0x420
+
         # 0x00001311 6e 06 yyyyyyyyyyyy
-        # yyyyyyyyyyyy server utc time
+        # 6e 06 switch_case+0x37 length+2
+        # yyyyyyyyyyyy msg client port CtrlThread+0x408
+
+        # 0x00001311 79 03
+        # 0x00001311 80 06
+        # 0x00001311 98 06
 
 
 def ruijie_ether_builder(frames):
