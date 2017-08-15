@@ -11,7 +11,7 @@ def init(parsers, builders):
 
 def ruijie_eapol_parser(frames):
     """ Simulate RuiJie's function 'ParsePrivateProperty'
-    ParsePrivateProperty(uchar *packet, int next_index, EAPOLFrame *frame)
+    ParsePrivateProperty(uchar *packet, int packet_length, EAPOLFrame *frame)
     '0x00001311' should be RuiJie's vender id
     """
 
@@ -222,8 +222,6 @@ def ruijie_private_builder(frames):
 
     # md5 challenge branch
     if 'eapol' in frames and frames['eapol']['type'] == b'\x04':
-        # TODO: further analysis on 'r13'
-        # 0x00455866 ~ 0x00455983
         # RadiusEncrpytPwd
         # (
         #     unsigned char *challenge,
@@ -232,27 +230,15 @@ def ruijie_private_builder(frames):
         #     unsigned int username_length,  // ceil to align on 4 bits
         #     unsigned char result*
         # )
-        # ( md5( username, challenge ) ^ password )[0 : 16]
-        field = bytearray()
-        field += frames['ruijie']['username']  # username
-        field += frames['ruijie']['md5 value']  # md5 challenge
-
-        password_length = len(frames['ruijie']['password'])
-
-        md5 = hashlib.md5()
-        md5.update(field)
-        field = bytearray(md5.digest())
-
-        for i in range(min(16, password_length)):
-            field[i] ^= frames['ruijie']['password'][i]
-
+        field = password_encode(
+            frames['ruijie']['username'],
+            frames['ruijie']['password'],
+            frames['ruijie']['md5 value']
+        )
         private += field
 
-        # 0x00455988 ~ 0x0045599a
-        # password_length += 0x0000000F
-        # password_length &= 0xFFFFFFF0
-        private[md5_anchor1] += 16  # password_length
-        private[md5_anchor2] += 16  # password_length
+        private[md5_anchor1] += len(field)
+        private[md5_anchor2] += len(field)
 
     # secondary dns
     # 0x004559ed ~ 0x00455a88
@@ -470,6 +456,27 @@ def dhcp_ip_encode(data):
         data[i] = ~data[i] & 0xFF
 
 
+def password_encode(username, password, challenge):
+    block = challenge
+    cipher = bytearray()
+
+    while len(password):
+        plain = password[0 : 16]
+        password = password[16: ]
+
+        md5 = hashlib.md5()
+        md5.update(username)
+        md5.update(block)
+        block = bytearray(md5.digest())
+
+        for i in range(len(plain)):
+            block[i] ^= plain[i]
+
+        cipher += block
+
+    return cipher
+
+
 def test():
     print('>>> dhcp ip')
     field = bytearray()
@@ -489,15 +496,18 @@ def test():
     print('ffff37777fffffffffffffffffffffffffacb1ff3ec640')
     dhcp_ip_encode(field)
     print(field.hex())
+    print('0000131101000000000000000000000000ca7200839cfd')
+
     print()
 
-    print('>>> private part')
-    frames = {}
-    frames['ether'] = {}
-    frames['ether']['source'] = b'\xDE\xAD\xBE\xAF\xDE\xAD'
-    field = rj_private_builder(frames)
+    print('>>> password')
+    field = password_encode(
+        b'Hello',
+        b'World',
+        bytearray.fromhex('becd6e05415013baa721445b8697ac42')
+    )
     print(field.hex())
-    print()
+    print('3587ced626ddc75a61be8575c50fe903')
 
 
 if __name__ == '__main__':
