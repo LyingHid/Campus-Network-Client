@@ -3,6 +3,8 @@
 
 import hashlib
 
+#from . import extra
+
 
 def init(parsers, builders):
     parsers['eapol'].append(ruijie_eapol_parser)
@@ -11,7 +13,7 @@ def init(parsers, builders):
 
 def ruijie_eapol_parser(frames):
     """ Simulate RuiJie's function 'ParsePrivateProperty'
-    ParsePrivateProperty(uchar *packet, int packet_length, EAPOLFrame *frame)
+    ParsePrivateProperty(uchar packet[], int packet_length, EAPOLFrame frame[])
     '0x00001311' should be RuiJie's vender id
     """
 
@@ -141,7 +143,7 @@ def ruijie_ether_builder(frames):
 
 def ruijie_private_builder(frames):
     """ Simulate RuiJie's function 'AppendPrivateProperty'
-    AppendPrivateProperty(uchar *packet, int &next_index, EAPOLFrame *frame)
+    AppendPrivateProperty(uchar packet[], int &next_index, EAPOLFrame frame[])
     '0x00001311' should be RuiJie's vender id
     """
 
@@ -224,11 +226,9 @@ def ruijie_private_builder(frames):
     if 'eapol' in frames and frames['eapol']['type'] == b'\x04':
         # RadiusEncrpytPwd
         # (
-        #     unsigned char *challenge,
-        #     unsigned int challenge_length,
-        #     unsigned char *username,       // filled with b'\x00'
-        #     unsigned int username_length,  // ceil to align on 4 bits
-        #     unsigned char result*
+        #     uchar challenge[], u challenge_length,
+        #     uchar username[], u username_length,
+        #     uchar result[]
         # )
         field = password_encode(
             frames['ruijie']['username'],
@@ -486,17 +486,12 @@ def test():
     field += b'\x00\x00\x00\x00'
     field += b'\x00\x00\x00\x00'
     field += b'\xca\x72\x00\x83'
-    print(field.hex())
-    print('0000131101000000000000000000000000ca720083')
     dhcp_ip_crc(field)
     print(field.hex())
     print('0000131101000000000000000000000000ca7200839cfd')
     dhcp_ip_encode(field)
     print(field.hex())
     print('ffff37777fffffffffffffffffffffffffacb1ff3ec640')
-    dhcp_ip_encode(field)
-    print(field.hex())
-    print('0000131101000000000000000000000000ca7200839cfd')
 
     print()
 
@@ -504,7 +499,7 @@ def test():
     field = password_encode(
         b'Hello',
         b'World',
-        bytearray.fromhex('becd6e05415013baa721445b8697ac42')
+        bytes.fromhex('becd6e05415013baa721445b8697ac42')
     )
     print(field.hex())
     print('3587ced626ddc75a61be8575c50fe903')
