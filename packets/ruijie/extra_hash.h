@@ -238,7 +238,7 @@ static int hash_init(HashObject *self, PyObject *args, PyObject *kwds) \
         {NULL}         /* sentinel */                                  \
     };
 
-#define OBJECT_TYPE_DEF(name)                \
+#define OBJECT_TYPE(name)                    \
     static PyTypeObject type_object = {      \
         PyVarObject_HEAD_INIT(NULL, 0)       \
         .tp_name      = "extra." #name,      \
@@ -263,6 +263,7 @@ static int hash_init(HashObject *self, PyObject *args, PyObject *kwds) \
         return module; \
     }
 
+
 #define PYTHON_OBJECT(name, tom) \
     OBJECT_DEF(tom)              \
     OBJECT_NEW()                 \
@@ -277,7 +278,7 @@ static int hash_init(HashObject *self, PyObject *args, PyObject *kwds) \
     OBJECT_COPY()                \
     OBJECT_GETSETER_DEF()        \
     OBJECT_METHODS_DEF()         \
-    OBJECT_TYPE_DEF(name)        \
+    OBJECT_TYPE(name)            \
     OBJECT_REGISTER(name, tom)
 
 #endif

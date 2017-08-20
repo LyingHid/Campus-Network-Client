@@ -1,5 +1,5 @@
 #include <Python.h>
-#include "extra_md5.h"
+#include "extra.h"
 
 static PyMethodDef ExtraMethods[] = {
     {NULL, NULL, 0, NULL}
@@ -21,6 +21,7 @@ PyMODINIT_FUNC PyInit_extra(void)
     if(module == NULL) return NULL;
 
     if(ruijie_md5_register(module) == NULL) return NULL;
+    if(ruijie_whirlpool_register(module) == NULL) return NULL;
 
     return module;
 }
