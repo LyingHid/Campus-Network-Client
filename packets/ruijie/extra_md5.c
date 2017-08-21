@@ -126,7 +126,7 @@ static void md5_compress(md5_state *md, unsigned char *buf)
    Initialize the hash state
    @param md  The hash state you wish to initialize
 */
-void md5_init(md5_state *md)
+static void md5_init(md5_state *md)
 {
     assert(md != NULL);
     md->state[0] = 0x50137246UL;  // 0x67452301UL;
@@ -151,9 +151,8 @@ HASH_PROCESS(md5_process, md5_compress, md5_state, BLOCKSIZE)
    Terminate the hash to get the digest
    @param md        The hash state
    @param out [out] The destination of the hash (16 bytes)
-   @return CRYPT_OK if successful
 */
-void md5_done(md5_state *md, unsigned char *out)
+static void md5_done(md5_state *md, unsigned char *out)
 {
     int i;
 

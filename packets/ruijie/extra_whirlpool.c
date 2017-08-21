@@ -3,7 +3,7 @@
 #include <Python.h>
 #include <pystrhex.h>
 #include "extra_hash.h"
-#include "ruijie_whirlpool.h"
+#include "extra_whirlpool.h"
 
 
 /** SECTION: libTomCrypt start **/
@@ -104,9 +104,8 @@ static void whirlpool_compress(whirlpool_state *md, unsigned char *buf)
 /**
    Initialize the hash state
    @param md   The hash state you wish to initialize
-   @return CRYPT_OK if successful
 */
-void whirlpool_init(whirlpool_state *md)
+static void whirlpool_init(whirlpool_state *md)
 {
     assert(md != NULL);
     memset(md, 0, sizeof(whirlpool_state));
@@ -125,7 +124,6 @@ void whirlpool_init(whirlpool_state *md)
    @param md     The hash state
    @param in     The data to hash
    @param inlen  The length of the data (octets)
-   @return CRYPT_OK if successful
 */
 HASH_PROCESS(whirlpool_process, whirlpool_compress, whirlpool_state, BLOCKSIZE)
 
@@ -133,9 +131,8 @@ HASH_PROCESS(whirlpool_process, whirlpool_compress, whirlpool_state, BLOCKSIZE)
    Terminate the hash to get the digest
    @param md  The hash state
    @param out [out] The destination of the hash (64 bytes)
-   @return CRYPT_OK if successful
 */
-void whirlpool_done(whirlpool_state *md, unsigned char *out)
+static void whirlpool_done(whirlpool_state *md, unsigned char *out)
 {
     int i;
 
@@ -176,5 +173,6 @@ void whirlpool_done(whirlpool_state *md, unsigned char *out)
 
 
 /** SECTION: libTomCrypt end **/
+
 
 PYTHON_OBJECT(RuijieWhirlpool, whirlpool)

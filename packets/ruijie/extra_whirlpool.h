@@ -2,8 +2,8 @@
 * http://www.libtom.net/LibTomCrypt/ */
 
 
-#ifndef HEADER_RUIJIE_WHIRLPOOL
-#define HEADER_RUIJIE_WHIRLPOOL
+#ifndef HEADER_EXTRA_WHIRLPOOL
+#define HEADER_EXTRA_WHIRLPOOL
 
 
 /* delta between standard sbox and ruijie's sbox
