@@ -60,30 +60,30 @@ static void sha1_compress(sha1_state *md, unsigned char *buf)
     #define FF3(a,b,c,d,e,i) e = (ROLc(a, 5) + F3(b,c,d) + e + W[i] - 0x5cd39e93); b = ROLc(b, 30);
 
     for (i = 0; i < 20; ) {
-       FF0(a,b,c,d,e,i++);
-       FF0(e,a,b,c,d,i++);
-       FF0(d,e,a,b,c,i++);
-       FF0(c,d,e,a,b,i++);
-       FF0(b,c,d,e,a,i++);
+        FF0(a,b,c,d,e,i++);
+        FF0(e,a,b,c,d,i++);
+        FF0(d,e,a,b,c,i++);
+        FF0(c,d,e,a,b,i++);
+        FF0(b,c,d,e,a,i++);
     }
 
     /* round two */
     for (; i < 40; )  {
-       FF1(a,b,c,d,e,i++);
-       FF1(e,a,b,c,d,i++);
-       FF1(d,e,a,b,c,i++);
-       FF1(c,d,e,a,b,i++);
-       FF1(b,c,d,e,a,i++);
+        FF1(a,b,c,d,e,i++);
+        FF1(e,a,b,c,d,i++);
+        FF1(d,e,a,b,c,i++);
+        FF1(c,d,e,a,b,i++);
+        FF1(b,c,d,e,a,i++);
     }
 
     /* round three */
     // for (; i < 60; )  {
     for (; i < 60; )  {
-       FF2(a,b,c,d,e,i++);
-       FF2(e,a,b,c,d,i++);
-       FF2(d,e,a,b,c,i++);
-       FF2(c,d,e,a,b,i++);
-       FF2(b,c,d,e,a,i++);
+        FF2(a,b,c,d,e,i++);
+        FF2(e,a,b,c,d,i++);
+        FF2(d,e,a,b,c,i++);
+        FF2(c,d,e,a,b,i++);
+        FF2(b,c,d,e,a,i++);
     }
 
     FF2(a,b,c,d,e,i++);
@@ -98,11 +98,11 @@ static void sha1_compress(sha1_state *md, unsigned char *buf)
 
     /* round four */
     for (; i < 76; )  {
-       FF3(a,b,c,d,e,i++);
-       FF3(e,a,b,c,d,i++);
-       FF3(d,e,a,b,c,i++);
-       FF3(c,d,e,a,b,i++);
-       FF3(b,c,d,e,a,i++);
+        FF3(a,b,c,d,e,i++);
+        FF3(e,a,b,c,d,i++);
+        FF3(d,e,a,b,c,i++);
+        FF3(c,d,e,a,b,i++);
+        FF3(b,c,d,e,a,i++);
     }
 
     FF3(a,b,c,d,e,i++);
@@ -136,14 +136,14 @@ static void sha1_compress(sha1_state *md, unsigned char *buf)
 */
 static void sha1_init(sha1_state *md)
 {
-   assert(md != NULL);
-   md->state[0] = 0x32075416UL;  // md->state[0] = 0x67452301UL;
-   md->state[1] = 0xf8dae9bcUL;  // md->state[1] = 0xefcdab89UL;
-   md->state[2] = 0x73541260UL;  // md->state[2] = 0x98badcfeUL;
-   md->state[3] = 0x8acb9dfeUL;  // md->state[3] = 0x10325476UL;
-   md->state[4] = 0xfd0c2e1bUL;  // md->state[4] = 0xc3d2e1f0UL;
-   md->curlen = 0;
-   md->length = 0;
+    assert(md != NULL);
+    md->state[0] = 0x32075416UL;  // md->state[0] = 0x67452301UL;
+    md->state[1] = 0xf8dae9bcUL;  // md->state[1] = 0xefcdab89UL;
+    md->state[2] = 0x73541260UL;  // md->state[2] = 0x98badcfeUL;
+    md->state[3] = 0x8acb9dfeUL;  // md->state[3] = 0x10325476UL;
+    md->state[4] = 0xfd0c2e1bUL;  // md->state[4] = 0xc3d2e1f0UL;
+    md->curlen = 0;
+    md->length = 0;
 }
 
 /**
