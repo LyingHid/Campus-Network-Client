@@ -24,6 +24,7 @@ PyMODINIT_FUNC PyInit_extra(void)
     if(ruijie_whirlpool_register(module) == NULL) return NULL;
     if(ruijie_sha1_register(module) == NULL) return NULL;
     if(ruijie_ripemd128_register(module) == NULL) return NULL;
+    if(ruijie_tiger_register(module) == NULL) return NULL;
 
     return module;
 }

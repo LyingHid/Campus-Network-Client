@@ -2,13 +2,23 @@
 #define HEADER_EXTRA_HASH
 
 
+#define min(x, y) ({                  \
+    typeof(x) _min1 = (x);            \
+    typeof(x) _min2 = (y);            \
+    (void) (&_min1 == &_min2);        \
+    _min1 < _min2 ? _min1 : _min2; })
+
+
 /** SECTION: libTomCrypt start **/
 /* the MD5 implementation is modified from libTomCrypt
  * http://www.libtom.net/LibTomCrypt/ */
 
 
-/* ulong64: 64-bit data type */
+/* uint64_t: 64-bit data type */
 #define CONST64(n) n ## ULL
+
+
+#define byte(x, n) (((x) >> (8 * (n))) & 255)
 
 
 /* rotate the hard way (platform optimizations could be done) */
@@ -36,6 +46,12 @@
 #define STORE32H(x, y)                                                                    \
     { (y)[0] = (unsigned char)(((x)>>24)&255); (y)[1] = (unsigned char)(((x)>>16)&255);   \
       (y)[2] = (unsigned char)(((x)>>8)&255); (y)[3] = (unsigned char)((x)&255); } while(0)
+
+#define LOAD64L(x, y)                                                       \
+    { x = (((uint64_t)((y)[7] & 255))<<56)|(((uint64_t)((y)[6] & 255))<<48)| \
+          (((uint64_t)((y)[5] & 255))<<40)|(((uint64_t)((y)[4] & 255))<<32)| \
+          (((uint64_t)((y)[3] & 255))<<24)|(((uint64_t)((y)[2] & 255))<<16)| \
+          (((uint64_t)((y)[1] & 255))<<8)|(((uint64_t)((y)[0] & 255))); }
 
 #define LOAD64H(x, y)                                                         \
     { x = (((uint64_t)((y)[0] & 255))<<56)|(((uint64_t)((y)[1] & 255))<<48) | \
@@ -77,7 +93,7 @@ static void func_name(state_name *md, const unsigned char *in, unsigned long inl
         }                                                                       \
         else                                                                    \
         {                                                                       \
-            n = Py_MIN(inlen, (Py_ssize_t)(block_size - md->curlen));           \
+            n = min(inlen, (block_size - md->curlen));           \
             memcpy(md->buf + md->curlen, in, (size_t)n);                        \
             md->curlen += n;                                                    \
             in         += n;                                                    \
