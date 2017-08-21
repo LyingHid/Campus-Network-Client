@@ -121,7 +121,6 @@ static void md5_compress(md5_state *md, unsigned char *buf)
     md->state[3] = md->state[3] + d;
 }
 
-
 /**
    Initialize the hash state
    @param md  The hash state you wish to initialize
@@ -137,7 +136,6 @@ static void md5_init(md5_state *md)
     md->length = 0;
 }
 
-
 /**
    Process a block of memory though the hash
    @param md     The hash state
@@ -145,7 +143,6 @@ static void md5_init(md5_state *md)
    @param inlen  The length of the data (octets)
 */
 HASH_PROCESS(md5_process, md5_compress, md5_state, BLOCKSIZE)
-
 
 /**
    Terminate the hash to get the digest

@@ -100,7 +100,6 @@ static void whirlpool_compress(whirlpool_state *md, unsigned char *buf)
         md->state[x] ^= T[0][x] ^ T[2][x];
 }
 
-
 /**
    Initialize the hash state
    @param md   The hash state you wish to initialize
