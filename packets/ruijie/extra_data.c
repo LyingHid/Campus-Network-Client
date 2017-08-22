@@ -1,5 +1,7 @@
+#include <Python.h>
+
 // uchar CVz_APIApp.GetAppData(int &length)
-unsigned char app_data[] = {
+static unsigned char app_data[] = {
     0x20, 0x12, 0x05, 0x03, 0x21, 0x57, 0x00, 0x00,
     0xd4, 0xf6, 0x7c, 0x00, 0xf8, 0xfa, 0x7c, 0x99,
     0x0c, 0x82, 0x4c, 0x00, 0xdc, 0x00, 0x21, 0x01,
@@ -231,7 +233,7 @@ unsigned char app_data[] = {
 };
 
 // uchar CVz_APIApp.GetDllData(int &length)
-unsigned char dll_data[] = {
+static unsigned char dll_data[] = {
     0x20, 0x12, 0x05, 0x03, 0x21, 0x57, 0x74, 0x2e,
     0x63, 0x70, 0x70, 0x20, 0x3a, 0x20, 0x44, 0x65,
     0x66, 0x69, 0x6e, 0x65, 0x73, 0x20, 0x74, 0x68,
@@ -488,3 +490,18 @@ unsigned char dll_data[] = {
     0x46, 0x41, 0x4c, 0x53, 0x45, 0x3b, 0x0d, 0x0a,
     0x7d, 0x0d, 0xe6
 };
+
+
+PyObject *ruijie_data_register(PyObject *module)
+{
+    PyObject *bytes_app = PyBytes_FromStringAndSize(
+        (const char *)app_data, sizeof(app_data));
+    PyObject *bytes_dll = PyBytes_FromStringAndSize(
+        (const char *)dll_data, sizeof(dll_data));
+    if(bytes_app == NULL || bytes_dll == NULL) return NULL;
+
+    PyModule_AddObject(module, "app_data", bytes_app);
+    PyModule_AddObject(module, "dll_data", bytes_dll);
+
+    return module;
+}

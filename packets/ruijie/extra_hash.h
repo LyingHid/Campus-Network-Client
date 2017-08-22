@@ -2,6 +2,11 @@
 #define HEADER_EXTRA_HASH
 
 
+#include <stdint.h>
+#include <Python.h>
+#include <pystrhex.h>
+
+
 #define min(x, y) ({                  \
     typeof(x) _min1 = (x);            \
     typeof(x) _min2 = (y);            \
@@ -27,13 +32,13 @@
 
 
 /* Endian Neutral macros that work on all platforms */
-#define LOAD32L(x, y)                            \
+#define LOAD32L(x, y)                       \
      { x = ((uint32_t)((y)[3] & 255)<<24) | \
            ((uint32_t)((y)[2] & 255)<<16) | \
            ((uint32_t)((y)[1] & 255)<<8)  | \
            ((uint32_t)((y)[0] & 255)); }
 
-#define LOAD32H(x, y)                     \
+#define LOAD32H(x, y)                      \
     { x = ((uint32_t)((y)[0] & 255)<<24) | \
           ((uint32_t)((y)[1] & 255)<<16) | \
           ((uint32_t)((y)[2] & 255)<<8)  | \
@@ -47,7 +52,7 @@
     { (y)[0] = (unsigned char)(((x)>>24)&255); (y)[1] = (unsigned char)(((x)>>16)&255);   \
       (y)[2] = (unsigned char)(((x)>>8)&255); (y)[3] = (unsigned char)((x)&255); } while(0)
 
-#define LOAD64L(x, y)                                                       \
+#define LOAD64L(x, y)                                                        \
     { x = (((uint64_t)((y)[7] & 255))<<56)|(((uint64_t)((y)[6] & 255))<<48)| \
           (((uint64_t)((y)[5] & 255))<<40)|(((uint64_t)((y)[4] & 255))<<32)| \
           (((uint64_t)((y)[3] & 255))<<24)|(((uint64_t)((y)[2] & 255))<<16)| \
@@ -73,39 +78,39 @@
 
 
 /* a simple macro for making hash "process" functions */
-#define HASH_PROCESS(func_name, compress_name, state_name, block_size)          \
-static void func_name(state_name *md, const unsigned char *in, unsigned long inlen)    \
-{                                                                               \
-    unsigned long n;                                                            \
-                                                                                \
-    assert(md != NULL);                                                         \
-    assert(in != NULL);                                                         \
-    assert(md->curlen <= sizeof(md->buf));                                      \
-                                                                                \
-    while (inlen > 0)                                                           \
-    {                                                                           \
-        if (md->curlen == 0 && inlen >= block_size)                             \
-        {                                                                       \
-            compress_name(md, (unsigned char *)in);                             \
-            md->length += block_size * 8;                                       \
-            in         += block_size;                                           \
-            inlen      -= block_size;                                           \
-        }                                                                       \
-        else                                                                    \
-        {                                                                       \
-            n = min(inlen, (block_size - md->curlen));           \
-            memcpy(md->buf + md->curlen, in, (size_t)n);                        \
-            md->curlen += n;                                                    \
-            in         += n;                                                    \
-            inlen      -= n;                                                    \
-            if (md->curlen == block_size)                                       \
-            {                                                                   \
-                compress_name(md, md->buf);                                     \
-                md->length += 8 * block_size;                                   \
-                md->curlen  = 0;                                                \
-            }                                                                   \
-        }                                                                       \
-    }                                                                           \
+#define HASH_PROCESS(func_name, compress_name, state_name, block_size) \
+static void func_name(state_name *md, const unsigned char *in, unsigned long inlen) \
+{ \
+    unsigned long n; \
+\
+    assert(md != NULL); \
+    assert(in != NULL); \
+    assert(md->curlen <= sizeof(md->buf)); \
+ \
+    while (inlen > 0) \
+    { \
+        if (md->curlen == 0 && inlen >= block_size) \
+        { \
+            compress_name(md, (unsigned char *)in); \
+            md->length += block_size * 8; \
+            in         += block_size; \
+            inlen      -= block_size; \
+        } \
+        else \
+        { \
+            n = min(inlen, (block_size - md->curlen)); \
+            memcpy(md->buf + md->curlen, in, (size_t)n); \
+            md->curlen += n; \
+            in         += n; \
+            inlen      -= n; \
+            if (md->curlen == block_size) \
+            { \
+                compress_name(md, md->buf); \
+                md->length += 8 * block_size; \
+                md->curlen  = 0; \
+            } \
+        } \
+    } \
 }
 
 
@@ -154,12 +159,6 @@ static void func_name(state_name *md, const unsigned char *in, unsigned long inl
         /* Type-specific fields go here. */ \
         tom ## _state hash_state; \
     } HashObject; \
-
-#define OBJECT_NEW() \
-    static PyObject *hash_new(PyTypeObject *type, PyObject *args, PyObject *kwds) \
-    { \
-        return type->tp_alloc(type, 0); \
-    }
 
 #define OBJECT_INIT(tom) \
     static int hash_init(HashObject *self, PyObject *args, PyObject *kwds) \
@@ -275,12 +274,12 @@ static void func_name(state_name *md, const unsigned char *in, unsigned long inl
         .tp_methods   = hash_methods,        \
         .tp_getset    = hash_getseters,      \
         .tp_init      = (initproc)hash_init, \
-        .tp_new       = hash_new             \
     };
 
 #define OBJECT_REGISTER(name, tom) \
     PyObject *ruijie_ ## tom ## _register(PyObject *module) \
     { \
+        type_object.tp_new = PyType_GenericNew; \
         if (PyType_Ready(&type_object) < 0) \
             return NULL; \
  \
@@ -293,7 +292,6 @@ static void func_name(state_name *md, const unsigned char *in, unsigned long inl
 
 #define PYTHON_OBJECT(name, tom) \
     OBJECT_DEF(tom)              \
-    OBJECT_NEW()                 \
     OBJECT_INIT(tom)             \
     OBJECT_DEL()                 \
     OBJECT_DIGESTSIZE()          \

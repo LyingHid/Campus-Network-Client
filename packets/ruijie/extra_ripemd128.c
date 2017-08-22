@@ -1,7 +1,3 @@
-#include <stdlib.h>
-#include <stdint.h>
-#include <Python.h>
-#include <pystrhex.h>
 #include "extra_hash.h"
 
 

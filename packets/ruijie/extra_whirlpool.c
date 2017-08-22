@@ -1,7 +1,3 @@
-#include <stdlib.h>
-#include <stdint.h>
-#include <Python.h>
-#include <pystrhex.h>
 #include "extra_hash.h"
 #include "extra_whirlpool.h"
 
@@ -107,7 +103,6 @@ static void whirlpool_compress(whirlpool_state *md, unsigned char *buf)
 static void whirlpool_init(whirlpool_state *md)
 {
     assert(md != NULL);
-    memset(md, 0, sizeof(whirlpool_state));
     md->state[0] = 0;
     md->state[1] = 3;
     md->state[2] = 5;
@@ -116,6 +111,8 @@ static void whirlpool_init(whirlpool_state *md)
     md->state[5] = 7;
     md->state[6] = 4;
     md->state[7] = 6;
+    md->curlen = 0;
+    md->length = 0;
 }
 
 /**
