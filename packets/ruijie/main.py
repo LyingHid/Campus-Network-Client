@@ -3,7 +3,7 @@
 
 import hashlib
 
-#from . import extra
+from . import extra
 
 
 def init(parsers, builders):
@@ -300,8 +300,12 @@ def ruijie_private_builder(frames):
     # CVz_APIApp::CVz_APIApp()
     # CVz_APIApp::Vz_API(char *, char *, char const *0x4a9c62)
     # 0x00455d40 ~ 0x00455e0d
-    # seem same when 'start' 'response id' and 'logoff'
-    # different when 'md5 challenge'
+    if 'eapol' in frames and frames['eapol']['type'] == b'\x04':
+        private += fingerprint_encode(frames['ruijie']['md5 value'])
+    else:
+        private += fingerprint_encode(b'\x00' * 10)
+
+    '''
     private += b'\x62\x34\x36\x34\x38\x39\x36\x64\x38\x31\x33\x35\x65\x65\x31\x64'
     private += b'\x61\x37\x64\x64\x32\x39\x32\x36\x62\x63\x62\x62\x36\x35\x61\x65'
     private += b'\x34\x65\x62\x37\x37\x64\x66\x36\x38\x31\x30\x31\x32\x61\x38\x65'
@@ -310,6 +314,7 @@ def ruijie_private_builder(frames):
     private += b'\x35\x38\x32\x61\x31\x64\x33\x33\x30\x64\x35\x66\x30\x33\x62\x61'
     private += b'\x34\x38\x32\x34\x35\x61\x38\x33\x32\x35\x66\x31\x32\x31\x35\x65'
     private += b'\x62\x62\x65\x34\x63\x66\x39\x63\x31\x63\x61\x32\x35\x62\x30\x62'
+    '''
 
     private += b'\x1a\x28'
     private += b'\x00\x00\x13\x11'
@@ -477,6 +482,50 @@ def password_encode(username, password, challenge):
     return cipher
 
 
+def fingerprint_encode(challenge):
+    case = (challenge[0] + challenge[3]) % 5
+
+    if case == 0:
+        even_bytes = bytearray()
+        odd_bytes = bytearray()
+        for i in range(0, 16, 2):
+            even_bytes.append(challenge[i])
+            odd_bytes.append(challenge[i + 1])
+        even_bytes = even_bytes.hex().encode()
+        odd_bytes = odd_bytes.hex().encode()
+
+        app_digest = extra.RuijieMD5(extra.app_data).hexdigest().encode()
+        dll_digest = extra.RuijieMD5(extra.dll_data).hexdigest().encode()
+
+        digest = app_digest + even_bytes + dll_digest + odd_bytes
+
+    elif case == 1:
+        app_digest = extra.RuijieSha1(extra.app_data).digest()
+        dll_digest = extra.RuijieSha1(extra.dll_data).digest()
+
+        digest = app_digest + challenge[0:6] + dll_digest + challenge[6:16]
+
+    elif case == 2:
+        app_digest = extra.RuijieSha1(extra.app_data).digest()
+        dll_digest = extra.RuijieRipemd128(extra.dll_data).digest()
+
+        digest = app_digest + challenge[0:6] + dll_digest + challenge[6:16]
+
+    elif case == 3:
+        app_digest = extra.RuijieTiger(extra.app_data).digest()
+        dll_digest = extra.RuijieRipemd128(extra.dll_data).digest()
+
+        digest = app_digest + challenge[0:10] + dll_digest + challenge[10:16]
+
+    else:
+        app_digest = extra.RuijieTiger(extra.app_data).digest()
+        dll_digest = extra.RuijieSha1(extra.dll_data).digest()
+
+        digest = app_digest + challenge[0:8] + dll_digest + challenge[8:16]
+
+    return extra.RuijieWhirlpool(digest).hexdigest().encode()
+
+
 def test():
     print('>>> dhcp ip')
     field = bytearray()
@@ -503,6 +552,22 @@ def test():
     )
     print(field.hex())
     print('3587ced626ddc75a61be8575c50fe903')
+
+    print()
+
+    print('>>> fingerprint')
+    print(fingerprint_encode(b'\x00' * 16).hex())
+    answer  = '6234363438393664383133356565316461376464323932366263626236356165'
+    answer += '3465623737646636383130313261386535326365386266353636313235313934'
+    answer += '6564313937626366646138663732396635383261316433333064356630336261'
+    answer += '3438323435613833323566313231356562626534636639633163613235623062'
+    print(answer)
+    print(fingerprint_encode(bytes.fromhex('11dea241f223749a7e00b095c5d7ba5e')).hex())
+    answer  = '6430323463653065343732633537666133363830653537313764663865386664'
+    answer += '3932363538396365656166383735633166303764323631633165353663366362'
+    answer += '3064666531313066623837633763653930633861363933373734303238363638'
+    answer += '3131636666373533643239356163643663383339303562353832653938356430'
+    print(answer)
 
 
 if __name__ == '__main__':
