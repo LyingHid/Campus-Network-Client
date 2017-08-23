@@ -303,7 +303,7 @@ def ruijie_private_builder(frames):
     if 'eapol' in frames and frames['eapol']['type'] == b'\x04':
         private += fingerprint_encode(frames['ruijie']['md5 value'])
     else:
-        private += fingerprint_encode(b'\x00' * 10)
+        private += fingerprint_encode(b'\x00' * 16)
 
     '''
     private += b'\x62\x34\x36\x34\x38\x39\x36\x64\x38\x31\x33\x35\x65\x65\x31\x64'
@@ -486,18 +486,17 @@ def fingerprint_encode(challenge):
     case = (challenge[0] + challenge[3]) % 5
 
     if case == 0:
-        even_bytes = bytearray()
-        odd_bytes = bytearray()
-        for i in range(0, 16, 2):
-            even_bytes.append(challenge[i])
-            odd_bytes.append(challenge[i + 1])
-        even_bytes = even_bytes.hex().encode()
-        odd_bytes = odd_bytes.hex().encode()
-
         app_digest = extra.RuijieMD5(extra.app_data).hexdigest().encode()
         dll_digest = extra.RuijieMD5(extra.dll_data).hexdigest().encode()
+        challenge = challenge.hex().encode()
 
-        digest = app_digest + even_bytes + dll_digest + odd_bytes
+        digest = bytearray()
+        digest += app_digest
+        for i in range(0, 32, 2):
+            digest.append(challenge[i])
+        digest += dll_digest
+        for i in range(1, 32, 2):
+            digest.append(challenge[i])
 
     elif case == 1:
         app_digest = extra.RuijieSha1(extra.app_data).digest()
