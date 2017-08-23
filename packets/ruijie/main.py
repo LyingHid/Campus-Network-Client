@@ -516,11 +516,11 @@ def fingerprint_encode(challenge):
 
         digest = app_digest + challenge[0:10] + dll_digest + challenge[10:16]
 
-    else:
-        app_digest = extra.RuijieTiger(extra.app_data).digest()
-        dll_digest = extra.RuijieSha1(extra.dll_data).digest()
+    else: #  case == 4:
+        app_digest = extra.RuijieSha1(extra.app_data).digest()
+        dll_digest = extra.RuijieTiger(extra.dll_data).digest()
 
-        digest = app_digest + challenge[0:8] + dll_digest + challenge[8:16]
+        digest = dll_digest + challenge[0:8] + app_digest + challenge[8:16]
 
     return extra.RuijieWhirlpool(digest).hexdigest().encode()
 
