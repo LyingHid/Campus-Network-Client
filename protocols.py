@@ -122,5 +122,7 @@ class RuijieProtocol(EapProtocol):
             EapProtocol.response_success(self, frames)
 
             print('notice')
-            print(frames['ruijie']['notice'].decode('gbk').replace('\r\n', '\n'))
+            print(frames['ruijie']['notice'].decode('gbk').replace('\r\n', '\n').strip())
+            print('bill')
+            print(frames['ruijie']['bill'].decode('gbk').strip())
             quit(0)

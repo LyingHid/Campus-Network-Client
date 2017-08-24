@@ -83,6 +83,15 @@ def ruijie_eapol_parser(frames):
         # zzzzzzzz*0x3e8 EAPOLFrame+0x654
         # uu EAPOLFrame+0x658
 
+        index += 142
+        if frames['8021x']['payload'][index] == 0x3c:
+            index += 1
+            length = frames['8021x']['payload'][index]
+            index += 1
+            bill = frames['8021x']['payload'][index : index + length]
+
+            frames['ruijie']['bill'] = bill
+
         # reach optional switch case
         # 0x0045730e ~ 0x00457354
 
