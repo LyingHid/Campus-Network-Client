@@ -483,7 +483,9 @@ def password_encode(username, password, challenge):
 
 
 def fingerprint_encode(challenge):
-    case = (challenge[0] + challenge[3]) % 5
+    case = challenge[0] + challenge[3]
+    case = case & 0xFF
+    case = case % 5
 
     if case == 0:
         app_digest = extra.RuijieMD5(extra.app_data).hexdigest().encode()
