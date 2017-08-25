@@ -127,3 +127,14 @@ class RuijieProtocol(EapProtocol):
                 print('bill')
                 print(frames['ruijie']['bill'].decode('gbk').strip())
             quit(0)
+
+
+    def response_failure(self, frames):
+        EapProtocol.response_failure(self, frames)
+
+        print('notice')
+        print(frames['ruijie']['notice'].decode('gbk').replace('\r\n', '\n').strip())
+        if 'bill' in frames['ruijie']:
+            print('bill')
+            print(frames['ruijie']['bill'].decode('gbk').strip())
+        quit(0)

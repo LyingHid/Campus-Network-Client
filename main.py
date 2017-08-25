@@ -48,6 +48,7 @@ protocol = protocols.RuijieProtocol(config)
 raw_transport = transport.RawTransport(config['nic'], parsers, builders, protocol, eventloop)
 
 
+# TODO: write real eventloop
 while True:
     results = eventloop.select()
     for key, events in results:

@@ -16,7 +16,7 @@ $ sudo python main.py -n enp3s0 -u GloveAn -p HelloWorld
 
 程序中有一个模块用于生成客户端的hash值校验，这个模块是用C语言写的。要使用这个模块，需要先用./packets/ruijie/setup.py对其进行编译，然后将编译好的.so文件移动到./packets/目录下。不过因为华科没有开启客户端的hash值校验，所以可以不使用这个模块。
 
-到目前位置程序中还没有用到依赖操作系统的东西，所以linux、windows和mac都能用。当然因为windows下没有Python环境，对命令行的支持不好，所以用起来会麻烦些。
+到目前为止程序中还没有用到依赖操作系统的东西，所以linux、windows和mac都能用。当然因为windows下没有Python环境，对命令行的支持不好，所以用起来会麻烦些。
 
 ## 致谢
 

@@ -55,6 +55,7 @@ except ImportError:
     print('ruijie.extra module is not compiled')
     print('using default function')
 
+
     def fingerprint_encode(challenge):
         data  = b'\x62\x34\x36\x34\x38\x39\x36\x64\x38\x31\x33\x35\x65\x65\x31\x64'
         data += b'\x61\x37\x64\x64\x32\x39\x32\x36\x62\x63\x62\x62\x36\x35\x61\x65'
@@ -103,7 +104,7 @@ def ruijie_eapol_parser(frames):
 
                 frames['ruijie']['services'] = services
 
-    elif frames['eapol']['code'] == b'\x03':
+    elif frames['eapol']['code'] == b'\x03' or frames['eapol']['code'] == b'\x04':
         index = 4  # location at extra data
 
         # notification (gbk encode)
@@ -146,7 +147,7 @@ def ruijie_eapol_parser(frames):
         # uu EAPOLFrame+0x658
 
         index += 142
-        if frames['8021x']['payload'][index] == 0x3c:
+        if index < len(frames['8021x']['payload']) and frames['8021x']['payload'][index] == 0x3c:
             index += 1
             length = frames['8021x']['payload'][index]
             index += 1
