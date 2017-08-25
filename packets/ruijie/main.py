@@ -3,7 +3,69 @@
 
 import hashlib
 
-from . import extra
+try:
+    from . import extra
+
+
+    def fingerprint_encode(challenge):
+        case = challenge[0] + challenge[3]
+        case = case & 0xFF
+        case = case % 5
+
+        if case == 0:
+            app_digest = extra.RuijieMD5(extra.app_data).hexdigest().encode()
+            dll_digest = extra.RuijieMD5(extra.dll_data).hexdigest().encode()
+            challenge = challenge.hex().encode()
+
+            digest = bytearray()
+            digest += app_digest
+            for i in range(0, 32, 2):
+                digest.append(challenge[i])
+            digest += dll_digest
+            for i in range(1, 32, 2):
+                digest.append(challenge[i])
+
+        elif case == 1:
+            app_digest = extra.RuijieSha1(extra.app_data).digest()
+            dll_digest = extra.RuijieSha1(extra.dll_data).digest()
+
+            digest = dll_digest + challenge[0:6] + app_digest + challenge[6:16]
+
+        elif case == 2:
+            app_digest = extra.RuijieRipemd128(extra.app_data).digest()
+            dll_digest = extra.RuijieSha1(extra.dll_data).digest()
+
+            digest = dll_digest + challenge[0:6] + app_digest + challenge[6:16]
+
+        elif case == 3:
+            app_digest = extra.RuijieTiger(extra.app_data).digest()
+            dll_digest = extra.RuijieRipemd128(extra.dll_data).digest()
+
+            digest = app_digest + challenge[0:10] + dll_digest + challenge[10:16]
+
+        else: #  case == 4:
+            app_digest = extra.RuijieSha1(extra.app_data).digest()
+            dll_digest = extra.RuijieTiger(extra.dll_data).digest()
+
+            digest = dll_digest + challenge[0:8] + app_digest + challenge[8:16]
+
+        return extra.RuijieWhirlpool(digest).hexdigest().encode()
+
+except ImportError:
+    print('ruijie.extra module is not compiled')
+    print('using default function')
+
+    def fingerprint_encode(challenge):
+        data  = b'\x62\x34\x36\x34\x38\x39\x36\x64\x38\x31\x33\x35\x65\x65\x31\x64'
+        data += b'\x61\x37\x64\x64\x32\x39\x32\x36\x62\x63\x62\x62\x36\x35\x61\x65'
+        data += b'\x34\x65\x62\x37\x37\x64\x66\x36\x38\x31\x30\x31\x32\x61\x38\x65'
+        data += b'\x35\x32\x63\x65\x38\x62\x66\x35\x36\x36\x31\x32\x35\x31\x39\x34'
+        data += b'\x65\x64\x31\x39\x37\x62\x63\x66\x64\x61\x38\x66\x37\x32\x39\x66'
+        data += b'\x35\x38\x32\x61\x31\x64\x33\x33\x30\x64\x35\x66\x30\x33\x62\x61'
+        data += b'\x34\x38\x32\x34\x35\x61\x38\x33\x32\x35\x66\x31\x32\x31\x35\x65'
+        data += b'\x62\x62\x65\x34\x63\x66\x39\x63\x31\x63\x61\x32\x35\x62\x30\x62'
+
+        return data
 
 
 def init(parsers, builders):
@@ -314,17 +376,6 @@ def ruijie_private_builder(frames):
     else:
         private += fingerprint_encode(b'\x00' * 16)
 
-    '''
-    private += b'\x62\x34\x36\x34\x38\x39\x36\x64\x38\x31\x33\x35\x65\x65\x31\x64'
-    private += b'\x61\x37\x64\x64\x32\x39\x32\x36\x62\x63\x62\x62\x36\x35\x61\x65'
-    private += b'\x34\x65\x62\x37\x37\x64\x66\x36\x38\x31\x30\x31\x32\x61\x38\x65'
-    private += b'\x35\x32\x63\x65\x38\x62\x66\x35\x36\x36\x31\x32\x35\x31\x39\x34'
-    private += b'\x65\x64\x31\x39\x37\x62\x63\x66\x64\x61\x38\x66\x37\x32\x39\x66'
-    private += b'\x35\x38\x32\x61\x31\x64\x33\x33\x30\x64\x35\x66\x30\x33\x62\x61'
-    private += b'\x34\x38\x32\x34\x35\x61\x38\x33\x32\x35\x66\x31\x32\x31\x35\x65'
-    private += b'\x62\x62\x65\x34\x63\x66\x39\x63\x31\x63\x61\x32\x35\x62\x30\x62'
-    '''
-
     private += b'\x1a\x28'
     private += b'\x00\x00\x13\x11'
     private += b'\x39\x22'
@@ -489,51 +540,6 @@ def password_encode(username, password, challenge):
         cipher += block
 
     return cipher
-
-
-def fingerprint_encode(challenge):
-    case = challenge[0] + challenge[3]
-    case = case & 0xFF
-    case = case % 5
-
-    if case == 0:
-        app_digest = extra.RuijieMD5(extra.app_data).hexdigest().encode()
-        dll_digest = extra.RuijieMD5(extra.dll_data).hexdigest().encode()
-        challenge = challenge.hex().encode()
-
-        digest = bytearray()
-        digest += app_digest
-        for i in range(0, 32, 2):
-            digest.append(challenge[i])
-        digest += dll_digest
-        for i in range(1, 32, 2):
-            digest.append(challenge[i])
-
-    elif case == 1:
-        app_digest = extra.RuijieSha1(extra.app_data).digest()
-        dll_digest = extra.RuijieSha1(extra.dll_data).digest()
-
-        digest = dll_digest + challenge[0:6] + app_digest + challenge[6:16]
-
-    elif case == 2:
-        app_digest = extra.RuijieRipemd128(extra.app_data).digest()
-        dll_digest = extra.RuijieSha1(extra.dll_data).digest()
-
-        digest = dll_digest + challenge[0:6] + app_digest + challenge[6:16]
-
-    elif case == 3:
-        app_digest = extra.RuijieTiger(extra.app_data).digest()
-        dll_digest = extra.RuijieRipemd128(extra.dll_data).digest()
-
-        digest = app_digest + challenge[0:10] + dll_digest + challenge[10:16]
-
-    else: #  case == 4:
-        app_digest = extra.RuijieSha1(extra.app_data).digest()
-        dll_digest = extra.RuijieTiger(extra.dll_data).digest()
-
-        digest = dll_digest + challenge[0:8] + app_digest + challenge[8:16]
-
-    return extra.RuijieWhirlpool(digest).hexdigest().encode()
 
 
 def test():
