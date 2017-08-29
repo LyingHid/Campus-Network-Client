@@ -2,46 +2,46 @@
 # -*- coding: utf-8 -*-
 
 import socket
-import selectors
+import eventloop
 
 
 class RawTransport():
-    def __init__(self, nic, parsers, builders, protocol, eventloop):
+    def __init__(self, config, protocol, loop):
+        self.config = config
+        self.protocol = protocol
+        self.loop = loop
+
         self.socket = socket.socket(socket.AF_PACKET, socket.SOCK_RAW, socket.htons(0x888E))
         self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.socket.bind((nic, 0x888E))
+        self.socket.bind((config['nic'], 0x888E))
         self.socket.setblocking(False)
 
         self.address = self.socket.getsockname()[4]
-
-        self.parsers  = parsers
-        self.builders = builders
-
-        self.protocol = protocol
-
-        self.eventloop = eventloop
-        self.eventloop.register(self.socket, selectors.EVENT_WRITE, self.on_events)
-
         self.first_writale = True
 
+        watcher = eventloop.FileWatcher(self.socket, eventloop.EVENT_WRITE, self.on_events)
+        loop.register(watcher)
 
-    def on_events(self, events):
-        if events & selectors.EVENT_READ:
+
+    def on_events(self, watcher, events):
+        if events & eventloop.EVENT_READ:
             packet = self.socket.recv(1522)
 
             frames = {}
             frames['raw'] = {}
             frames['raw']['payload'] = packet
 
+            parsers = self.config['packet']['parsers']
             level = 'top'
             while level:
-                for parser in self.parsers[level]:
+                for parser in parsers[level]:
                     level = parser(frames)
 
             self.protocol.data_received(frames)
 
-        if events & selectors.EVENT_WRITE:
-            self.eventloop.modify(self.socket, selectors.EVENT_READ, self.on_events)
+        if events & eventloop.EVENT_WRITE:
+            watcher.events = eventloop.EVENT_READ
+            self.loop.modify(watcher)
 
             if self.first_writale:
                 self.first_writale = False
@@ -51,9 +51,10 @@ class RawTransport():
     # interface transport
     def send_data(self, frames):
         # TODO: wait for eventloop writable
+        builders = self.config['packet']['builders']
         level = 'bottom'
         while level:
-            for builder in self.builders[level]:
+            for builder in builders[level]:
                 level = builder(frames)
 
         self.socket.send(frames['raw']['payload'])

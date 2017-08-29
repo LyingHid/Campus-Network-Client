@@ -8,6 +8,7 @@ import packets.standard
 import packets.ruijie
 import protocols
 import transport
+import eventloop
 
 
 config = {}
@@ -27,9 +28,6 @@ if 'n' in args:
     config['nic'] = args.n
 
 
-eventloop = selectors.DefaultSelector()
-
-
 parsers = {}
 parsers['top'  ] = []
 parsers['8021x'] = []
@@ -42,14 +40,13 @@ builders['bottom'] = []
 
 packets.standard.init(parsers, builders)
 packets.ruijie.init(parsers, builders)
+config['packet'] = {}
+config['packet']['parsers'] = parsers
+config['packet']['builders'] = builders
 
 
+loop = eventloop.Eventloop()
 protocol = protocols.RuijieProtocol(config)
-raw_transport = transport.RawTransport(config['nic'], parsers, builders, protocol, eventloop)
+raw_transport = transport.RawTransport(config, protocol, loop)
 
-
-# TODO: write real eventloop
-while True:
-    results = eventloop.select()
-    for key, events in results:
-        key.data(events)
+loop.run()
