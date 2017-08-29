@@ -18,9 +18,10 @@ class RawTransport():
 
         self.address = self.socket.getsockname()[4]
         self.first_writale = True
+        self.send_buffer = bytearray()
 
-        watcher = eventloop.FileWatcher(self.socket, eventloop.EVENT_WRITE, self.on_events)
-        loop.register(watcher)
+        self.watcher = eventloop.FileWatcher(self.socket, eventloop.EVENT_WRITE, self.on_events)
+        self.loop.register(self.watcher)
 
 
     def on_events(self, watcher, events):
@@ -40,24 +41,35 @@ class RawTransport():
             self.protocol.data_received(frames)
 
         if events & eventloop.EVENT_WRITE:
-            watcher.events = eventloop.EVENT_READ
-            self.loop.modify(watcher)
-
             if self.first_writale:
                 self.first_writale = False
+
+                watcher.events = eventloop.EVENT_READ
+                self.loop.modify(watcher)
+
                 self.protocol.connection_made(self)
+            else:
+                nsent = self.socket.send(self.send_buffer)
+                self.send_buffer = self.send_buffer[nsent:]
+
+                if len(self.send_buffer) == 0:
+                    self.watcher.events = eventloop.EVENT_READ
+                    self.loop.modify(self.watcher)
 
 
     # interface transport
     def send_data(self, frames):
-        # TODO: wait for eventloop writable
         builders = self.config['packet']['builders']
         level = 'bottom'
         while level:
             for builder in builders[level]:
                 level = builder(frames)
 
-        self.socket.send(frames['raw']['payload'])
+        self.send_buffer += frames['raw']['payload']
+
+        if self.watcher.events & eventloop.EVENT_WRITE == 0:
+            self.watcher.events |= eventloop.EVENT_WRITE
+            self.loop.modify(self.watcher)
 
 
     # interface transport
