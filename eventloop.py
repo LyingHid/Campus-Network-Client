@@ -2,8 +2,10 @@
 # -*- coding: utf-8 -*-
 
 import selectors
+import socket
 import heapq
 import time
+import signal
 
 
 EVENT_READ = selectors.EVENT_READ
@@ -29,11 +31,28 @@ class TimeWatcher():
         self.timestamp = None
 
 
+class SignalWatcher():
+    def __init__(self, number, callback, data=None):
+        self.number = number
+        self.callback = callback
+        self.data = data
+        self.eventloop = None
+
+
 class Eventloop():
     def __init__(self):
         self.goon = True
         self.selector = selectors.DefaultSelector()
         self.timers = []
+        self.signals = {}
+        self.signal_frames = {}
+
+        # spcket pair with signal to file descriptor
+        self.send_pair, self.recv_pair = socket.socketpair()
+        self.send_pair.setblocking(False)
+        self.recv_pair.setblocking(False)
+        self.pair_watcher = FileWatcher(self.recv_pair, EVENT_READ, self.pair_callback)
+        self.register(self.pair_watcher)
 
 
     def register(self, watcher):
@@ -44,8 +63,16 @@ class Eventloop():
         elif isinstance(watcher, TimeWatcher):
             watcher.timestamp = watcher.first + time.monotonic()
             heapq.heappush(self.timers, (watcher.timestamp, watcher))
+        else:  # no check to ensure we have a SignalWatcher here
+            number = watcher.number
+            if number in self.signals:
+                raise ValueError("signal is already registered")
+            self.signals[number] = watcher
+            signal.signal(number, self.signal_callback)
+            signal.set_wakeup_fd(self.send_pair.fileno())
 
 
+    # modify untested and unused
     def modify(self, watcher):
         if isinstance(watcher, FileWatcher):
             self.selector.modify(watcher.file, watcher.events, watcher)
@@ -54,28 +81,37 @@ class Eventloop():
             # it will not take effect until it is popped out from the heap
             # and re-pushed into the heap
             pass
+        else:
+            if watcher.number not in self.signals:
+                raise ValueError("signal is not registered")
 
 
     def unregister(self, watcher):
         watcher.eventloop = None
 
         if isinstance(watcher, FileWatcher):
-            try:
-                self.selector.unregister(watcher.file)
-            except KeyError:
-                pass
-            except ValueError:
-                pass
+            self.selector.unregister(watcher.file)
         elif isinstance(watcher, TimeWatcher):
-            try:
-                # using flag to indicate deletion
-                i = self.timers.index((watcher.timestamp, watcher))
-                self.timers[i] = (watcher.timestamp, None)
-            except ValueError:
-                pass
+            # using flag to indicate deletion
+            i = self.timers.index((watcher.timestamp, watcher))
+            self.timers[i] = (watcher.timestamp, None)
+        else:
+            number = watcher.number
+            if number not in self.signals:
+                raise ValueError("signal is not registered")
+            if number == signal.SIGINT:
+                signal.signal(number, signal.default_int_handler)
+            else:
+                signal.signal(number, signal.SIG_DFL)
+            del self.signals[number]
+            if len(self.signals) == 0:
+                signal.set_wakeup_fd(-1)
 
 
     def run(self):
+        if self.goon == False:
+            raise StopIteration("cannot resume a stopped eventloop")
+
         while self.goon:
             if len(self.timers):
                 timeout = self.timers[0][0] - time.monotonic()
@@ -106,12 +142,29 @@ class Eventloop():
                 watcher.callback(watcher, events)
 
 
+    # private. I don't want use '_' to indicate private methods
+    def pair_callback(self, watcher, events):
+        data = self.recv_pair.recv(1024)
+        for number in data:
+            watcher = self.signals[number]
+            watcher.callback(watcher, self.signal_frames[number])
+            del self.signal_frames[number]
+
+
+    # private. I don't want use '_' to indicate private methods
+    def signal_callback(self, number, frame):
+        if number in self.signals:
+            self.signal_frames[number] = frame
+
+
     def stop(self):
+        self.unregister(self.pair_watcher)
+        self.send_pair.close()
+        self.recv_pair.close()
         self.goon = False
 
 
 def test():
-    import socket
     import struct
 
 
@@ -138,7 +191,12 @@ def test():
         watcher.count += 1
         if watcher.count == 5:
             eventloop.unregister(watcher)
-            eventloop.stop()
+
+
+    def signal_callback(watcher, number):
+        print("sig int received")
+        eventloop.unregister(watcher)
+        eventloop.stop()
 
 
     eventloop = Eventloop()
@@ -152,6 +210,12 @@ def test():
     timer = TimeWatcher(0, 1, time_callback)
     timer.count = 0
     eventloop.register(timer)
+    timer = TimeWatcher(0, 1, time_callback)
+    timer.count = 2
+    eventloop.register(timer)
+
+    keyint = SignalWatcher(signal.SIGINT, signal_callback)
+    eventloop.register(keyint)
 
     sock_a.send(b'\x00')
     eventloop.run()
