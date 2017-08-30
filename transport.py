@@ -18,6 +18,7 @@ class RawTransport():
 
         self.address = self.socket.getsockname()[4]
         self.first_writale = True
+        self.last_receive = False
         self.send_buffer = bytearray()
 
         self.watcher = eventloop.FileWatcher(self.socket, eventloop.EVENT_WRITE, self.on_events)
@@ -53,8 +54,13 @@ class RawTransport():
                 self.send_buffer = self.send_buffer[nsent:]
 
                 if len(self.send_buffer) == 0:
-                    self.watcher.events = eventloop.EVENT_READ
-                    self.loop.modify(self.watcher)
+                    if self.last_receive:
+                        self.loop.unregister(watcher)
+                        self.protocol.connection_lost(None)
+                        self.loop.stop()
+                    else:
+                        watcher.events = eventloop.EVENT_READ
+                        self.loop.modify(watcher)
 
 
     # interface transport
@@ -70,6 +76,16 @@ class RawTransport():
         if self.watcher.events & eventloop.EVENT_WRITE == 0:
             self.watcher.events |= eventloop.EVENT_WRITE
             self.loop.modify(self.watcher)
+
+
+    # interface transport
+    def lose_connection(self):
+        self.last_receive = True
+
+        if len(self.send_buffer) == 0:
+            self.loop.unregister(self.watcher)
+            self.protocol.connection_lost(None)
+            self.loop.stop()
 
 
     # interface transport

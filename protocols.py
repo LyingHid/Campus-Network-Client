@@ -17,6 +17,11 @@ class EapProtocol():
 
 
     # interface protocol
+    def connection_lost(self, reason):
+        pass
+
+
+    # interface protocol
     def data_received(self, frames):
         if frames['eapol']['code'] == b'\x01':
             if frames['eapol']['type'] == b'\x01':
@@ -86,10 +91,12 @@ class EapProtocol():
 
     def response_success(self, frames):
         print('authentication successed')
+        self.transport.lose_connection()
 
 
     def response_failure(self, frames):
         print('authentication failed')
+        self.transport.lose_connection()
 
 
 class RuijieProtocol(EapProtocol):
@@ -126,7 +133,6 @@ class RuijieProtocol(EapProtocol):
             if 'bill' in frames['ruijie']:
                 print('bill')
                 print(frames['ruijie']['bill'].decode('gbk').strip())
-            quit(0)
 
 
     def response_failure(self, frames):
@@ -137,4 +143,3 @@ class RuijieProtocol(EapProtocol):
         if 'bill' in frames['ruijie']:
             print('bill')
             print(frames['ruijie']['bill'].decode('gbk').strip())
-        quit(0)
