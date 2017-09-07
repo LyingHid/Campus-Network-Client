@@ -69,12 +69,7 @@ except ImportError:
         return data
 
 
-def init(parsers, builders):
-    parsers['eapol'].append(ruijie_eapol_parser)
-    builders['ether'].append(ruijie_ether_builder)
-
-
-def ruijie_eapol_parser(frames):
+def eapol_parser(frames):
     """ Simulate RuiJie's function 'ParsePrivateProperty'
     ParsePrivateProperty(uchar packet[], int packet_length, EAPOLFrame frame[])
     '0x00001311' should be RuiJie's vender id
@@ -160,7 +155,7 @@ def ruijie_eapol_parser(frames):
 
         # 0x00001311 56 06 yyyyyyyy
         # 56 06 switch_case+0x37 length+2
-        # ? 计费提示
+        # ?
         # yyyyyyyy auto_reconnect CtrlThread+0x33e 0x340
 
         # 0x00001311 5a 06 yyyyyyyy
@@ -208,7 +203,7 @@ def ruijie_eapol_parser(frames):
         # 0x00001311 98 06
 
 
-def ruijie_ether_builder(frames):
+def ether_builder(frames):
     private = ruijie_private_builder(frames)
     frames['raw']['payload'] += private
 
@@ -578,12 +573,6 @@ def test():
     answer += '3465623737646636383130313261386535326365386266353636313235313934'
     answer += '6564313937626366646138663732396635383261316433333064356630336261'
     answer += '3438323435613833323566313231356562626534636639633163613235623062'
-    print(answer)
-    print(fingerprint_encode(bytes.fromhex('11dea241f223749a7e00b095c5d7ba5e')).hex())
-    answer  = '6430323463653065343732633537666133363830653537313764663865386664'
-    answer += '3932363538396365656166383735633166303764323631633165353663366362'
-    answer += '3064666531313066623837633763653930633861363933373734303238363638'
-    answer += '3131636666373533643239356163643663383339303562353832653938356430'
     print(answer)
 
 

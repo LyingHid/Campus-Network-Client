@@ -18,17 +18,7 @@ if 'None' is returned, then the parsing or building process completes.
 """
 
 
-def init(parsers, builders):
-    parsers['top'  ].insert(0, standard_ether_parser)
-    parsers['8021x'].insert(0, standard_8021x_parser)
-    parsers['eapol'].insert(0, standard_eapol_parser)
-
-    builders['ether' ].insert(0, standard_ether_builder)
-    builders['8021x' ].insert(0, standard_8021x_builder)
-    builders['bottom'].insert(0, standard_eapol_builder)
-
-
-def standard_ether_parser(frames):
+def ether_parser(frames):
     packet = frames['raw']['payload']
 
     frames['ether'] = {}
@@ -41,7 +31,7 @@ def standard_ether_parser(frames):
     return '8021x'
 
 
-def standard_8021x_parser(frames):
+def x8021_parser(frames):
     packet = frames['ether']['payload']
 
     frames['8021x'] = {}
@@ -54,7 +44,7 @@ def standard_8021x_parser(frames):
     return 'eapol'
 
 
-def standard_eapol_parser(frames):
+def eapol_parser(frames):
     if 'payload' not in frames['8021x']: return
     packet = frames['8021x']['payload']
 
@@ -82,7 +72,7 @@ def standard_eapol_parser(frames):
     return
 
 
-def standard_ether_builder(frames):
+def ether_builder(frames):
     packet = bytearray()
 
     packet += frames['ether']['destination']
@@ -95,7 +85,7 @@ def standard_ether_builder(frames):
     return
 
 
-def standard_8021x_builder(frames):
+def x8021_builder(frames):
     packet = bytearray()
 
     length = len(frames['8021x']['payload']) if 'payload' in frames['8021x'] else 0
@@ -112,7 +102,7 @@ def standard_8021x_builder(frames):
     return 'ether'
 
 
-def standard_eapol_builder(frames):
+def eapol_builder(frames):
     if 'eapol' not in frames: return '8021x'
 
     packet = bytearray()

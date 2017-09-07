@@ -2,17 +2,17 @@
 # -*- coding: utf-8 -*-
 
 import argparse
-import selectors
 
-import packets.standard
-import packets.ruijie
 import protocols
 import transport
 import eventloop
 
 
+#TODO: make config a singleton
+#TODO: save and load config
 config = {}
 config['user'] = {}
+
 
 parser = argparse.ArgumentParser(prog="Campus Network Fucker")
 parser.add_argument("-u", help="username used in authentication")
@@ -28,25 +28,22 @@ if 'n' in args:
     config['nic'] = args.n
 
 
-parsers = {}
-parsers['top'  ] = []
-parsers['8021x'] = []
-parsers['eapol'] = []
-
-builders = {}
-builders['ether' ] = []
-builders['8021x' ] = []
-builders['bottom'] = []
-
-packets.standard.init(parsers, builders)
-packets.ruijie.init(parsers, builders)
 config['packet'] = {}
-config['packet']['parsers'] = parsers
-config['packet']['builders'] = builders
+
+config['packet']['parsers'] = {}
+config['packet']['parsers']['ether'] = []
+config['packet']['parsers']['8021x'] = []
+config['packet']['parsers']['eapol'] = []
+
+config['packet']['builders'] = {}
+config['packet']['builders']['ether'] = []
+config['packet']['builders']['8021x'] = []
+config['packet']['builders']['eapol'] = []
 
 
 loop = eventloop.Eventloop()
-protocol = protocols.RuijieProtocol(config)
+protocol = protocols.get_default(config)
 raw_transport = transport.RawTransport(config, protocol, loop)
+
 
 loop.run()

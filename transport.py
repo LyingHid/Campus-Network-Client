@@ -34,7 +34,7 @@ class RawTransport():
             frames['raw']['payload'] = packet
 
             parsers = self.config['packet']['parsers']
-            level = 'top'
+            level = 'ether'
             while level:
                 for parser in parsers[level]:
                     level = parser(frames)
@@ -66,7 +66,7 @@ class RawTransport():
     # interface transport
     def send_data(self, frames):
         builders = self.config['packet']['builders']
-        level = 'bottom'
+        level = 'eapol'
         while level:
             for builder in builders[level]:
                 level = builder(frames)

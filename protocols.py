@@ -3,11 +3,22 @@
 
 import hashlib
 
+from packets import standard
+from packets import ruijie
+
 
 class EapProtocol():
     def __init__(self, config):
         self.config = config
         self.transport = None
+
+        config['packet']['parsers']['ether'].insert(0, standard.ether_parser)
+        config['packet']['parsers']['8021x'].insert(0, standard.x8021_parser)
+        config['packet']['parsers']['eapol'].insert(0, standard.eapol_parser)
+
+        config['packet']['builders']['ether'].insert(0, standard.ether_builder)
+        config['packet']['builders']['8021x'].insert(0, standard.x8021_builder)
+        config['packet']['builders']['eapol'].insert(0, standard.eapol_builder)
 
 
     # interface protocol
@@ -105,6 +116,9 @@ class RuijieProtocol(EapProtocol):
 
         self.round = 0
 
+        config['packet']['parsers']['eapol'].append(ruijie.eapol_parser)
+        config['packet']['builders']['ether'].append(ruijie.ether_builder)
+
 
     def connection_made(self, transport):
         self.round = 1
@@ -140,6 +154,10 @@ class RuijieProtocol(EapProtocol):
 
         print('notice')
         print(frames['ruijie']['notice'].decode('gbk').replace('\r\n', '\n').strip())
-        if 'bill' in frames['ruijie']:
-            print('bill')
-            print(frames['ruijie']['bill'].decode('gbk').strip())
+
+
+def get_default(config):
+    """ protocol factory
+    the factory can be extended to support other schools
+    """
+    return RuijieProtocol(config)
