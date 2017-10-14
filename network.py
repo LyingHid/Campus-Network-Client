@@ -47,7 +47,7 @@ def get_adapter_socket(adapter):
     sock.bind((adapter, 0x888E))
     sock.setblocking(False)
 
-    return sock
+    return (sock, sock.getsockname()[4])
 
 
 if __name__ == "__main__":

@@ -5,6 +5,7 @@ import hashlib
 
 from packets import standard
 from packets import ruijie
+import network
 
 
 class EapProtocol():
@@ -24,7 +25,7 @@ class EapProtocol():
     # interface protocol
     def connection_made(self, transport):
         self.transport = transport
-        self.start_eapol()
+        self.start_eapol({})
 
 
     # interface protocol
@@ -45,9 +46,7 @@ class EapProtocol():
             self.response_failure(frames)
 
 
-    def start_eapol(self):
-        frames = {}
-
+    def start_eapol(self, frames):
         frames['raw'] = {}
 
         frames['ether'] = {}
@@ -115,6 +114,11 @@ class RuijieProtocol(EapProtocol):
         EapProtocol.__init__(self, config)
 
         self.round = 0
+        self.dhcp = {}
+        self.dhcp['ipv4'] = b'\x00\x00\x00\x00'
+        self.dhcp['mask'] = b'\x00\x00\x00\x00'
+        self.dhcp['gateway'] = b'\x00\x00\x00\x00'
+        self.dhcp['dns'] = b'\x00\x00\x00\x00'
 
         config['packet']['parsers']['eapol'].append(ruijie.eapol_parser)
         config['packet']['builders']['ether'].append(ruijie.ether_builder)
@@ -126,8 +130,22 @@ class RuijieProtocol(EapProtocol):
         EapProtocol.connection_made(self, transport)
 
 
+    def start_eapol(self, frames):
+        frames['ruijie'] = {}
+        frames['ruijie']['dhcp'] = self.dhcp
+
+        EapProtocol.start_eapol(self, frames)
+
+
+    def response_id(self, frames):
+        frames['ruijie']['dhcp'] = self.dhcp
+
+        EapProtocol.response_id(self, frames)
+
+
     def response_md5_challenge(self, frames):
         frames['eapol']['md5 extra data'] = self.config['user']['username']
+        frames['ruijie']['dhcp'] = self.dhcp
         frames['ruijie']['username'] = self.config['user']['username']
         frames['ruijie']['password'] = self.config['user']['password']
 
@@ -137,8 +155,9 @@ class RuijieProtocol(EapProtocol):
     def response_success(self, frames):
         if self.round <= 1:
             self.round += 1
-            # TODO: dhcp and ip info
-            self.start_eapol()
+            network.set_adapter_address(self.config['nic'])
+            self.dhcp = network.get_adapter_dhcp_info(self.config['nic'])
+            self.start_eapol({})
         else:
             EapProtocol.response_success(self, frames)
 

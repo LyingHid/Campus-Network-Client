@@ -223,13 +223,13 @@ def ruijie_private_builder(frames):
     # is dhcp enabled:1 < EAPOLFrame+0x65c:4 < CtrlThread+0x29c:4
     field += b'\x01'  # dhcp is enabled in HUST
     # ipv4:4 < EAPOLFrame+0x660:4 < CtrlThread+0x2a0:4
-    field += b'\x00\x00\x00\x00'
+    field += frames['ruijie']['dhcp']['ipv4']
     # mask:4 < EAPOLFrame+0x664:4 < CtrlThread+0x2a4:4
-    field += b'\x00\x00\x00\x00'
+    field += frames['ruijie']['dhcp']['mask']
     # gateway:4 < EAPOLFrame+0x668:4 < CtrlThread+0x2a8:4
-    field += b'\x00\x00\x00\x00'
+    field += frames['ruijie']['dhcp']['gateway']
     # primary dns:4 < EAPOLFrame+0x66c:4 < CtrlThread+0x2ac:4
-    field += b'\xca\x72\x00\x83'  # 202.114.0.131 in HUST
+    field += frames['ruijie']['dhcp']['dns']  # 202.114.0.131 in HUST
     dhcp_ip_crc(field)
     dhcp_ip_encode(field)
     private += field

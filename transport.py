@@ -2,7 +2,9 @@
 # -*- coding: utf-8 -*-
 
 import socket
+
 import eventloop
+import network
 
 
 class RawTransport():
@@ -11,12 +13,8 @@ class RawTransport():
         self.protocol = protocol
         self.loop = loop
 
-        self.socket = socket.socket(socket.AF_PACKET, socket.SOCK_RAW, socket.htons(0x888E))
-        self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.socket.bind((config['nic'], 0x888E))
-        self.socket.setblocking(False)
+        self.socket, self.address = network.get_adapter_socket(config['nic'])
 
-        self.address = self.socket.getsockname()[4]
         self.first_writale = True
         self.last_receive = False
         self.send_buffer = bytearray()
