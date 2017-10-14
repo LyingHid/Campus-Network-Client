@@ -16,7 +16,6 @@ def get_adapters():
     for i in range(0, len(ip_result), 2):
         adapter = re.search(r'.*: ((enp|wlp)\w+):.*<.*UP.*>.*', ip_result[i])
         if adapter:
-            print(adapter)
             adapters.append(adapter.group(1))
 
     return adapters
