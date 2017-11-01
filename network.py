@@ -50,6 +50,22 @@ def get_adapter_socket(adapter):
     return (sock, sock.getsockname()[4])
 
 
+def detact_network_manager():
+    command = 'nmcli -v'
+    result = subprocess.run(command.split(), stdout=subprocess.PIPE, encoding='utf-8')
+    return result.returncode == 0  # true if exists
+
+
+def attach_network_manager(adapter):
+    command = 'nmcli dev set ' + adapter + ' managed yes'
+    subprocess.run(command.split(), stdout=subprocess.PIPE, encoding='utf-8')
+
+
+def detach_network_manager(adapter):
+    command = 'nmcli dev set ' + adapter + ' managed no'
+    subprocess.run(command.split(), stdout=subprocess.PIPE, encoding='utf-8')
+
+
 if __name__ == "__main__":
     print(get_adapters())
     print(get_adapter_dhcp_info('enp5s0'))

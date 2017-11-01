@@ -14,7 +14,7 @@ $ sudo python main.py -n enp3s0 -u GloveAn -p HelloWorld
 
 程序需要三个输入，分别是网卡名称、用户名和密码，对应的参数为 -n / -u / -p 。由于使用到了raw socket，所以需要root权限。**注意**：输入的密码会被保存在history中。
 
-如果不知道网卡名称，可以使用 `$ sudo python main.py -l` 列出系统中可用的网卡。
+如果不知道网卡名称，可以使用 `$ sudo python main.py -l` 列出系统中可用的网卡。为了避免Gnome Network Manager的干扰，认证时会将对应的网卡设为unmanaged状态，如果需要重新让Gnome Network Manager管理这个网卡，可以使用 `$ sudo python main.py -r nic_name`。
 
 程序中有一个模块用于生成客户端的hash值校验，这个模块是用C语言写的。要使用这个模块，需要先用./packets/ruijie/setup.py对其进行编译，然后将编译好的.so文件移动到./packets/目录下。不过因为华科没有开启客户端的hash值校验，所以可以不使用这个模块。
 

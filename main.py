@@ -20,6 +20,7 @@ parser.add_argument("-u", help="username used in authentication")
 parser.add_argument("-p", help="password used in authentication")
 parser.add_argument("-n", help="network interface name")
 parser.add_argument("-l", action='store_true', help="list available network interface")
+parser.add_argument("-r", help="resume unmanaged device to network manager")
 args = parser.parse_args()
 
 if args.u:
@@ -32,6 +33,10 @@ if args.l:
     print('available network interface:')
     for adapter in network.get_adapters():
         print(adapter)
+    quit(0)
+if args.r:
+    print('set ' + args.r + ' managed by network manager')
+    network.attach_network_manager(args.r)
     quit(0)
 
 
