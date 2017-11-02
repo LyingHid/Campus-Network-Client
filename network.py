@@ -22,7 +22,12 @@ def get_adapters():
 
 
 def set_adapter_address(adapter):
-    command = 'dhcpcd -w ' + adapter
+    command = 'systemctl status dhcpcd@' + adapter + '.service'
+    result = subprocess.run(command.split(), stdout=subprocess.PIPE, encoding='utf-8')
+    if 'Active: active (running)' in result.stdout:
+        command = 'systemctl restart dhcpcd@' + adapter + '.service'
+    else:
+        command = 'systemctl start dhcpcd@' + adapter + '.service'
     subprocess.run(command.split(), stdout=subprocess.PIPE, encoding='utf-8')
 
 
