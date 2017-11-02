@@ -5,15 +5,15 @@ import socket
 
 import eventloop
 import network
+import config
 
 
 class RawTransport():
-    def __init__(self, config, protocol, loop):
-        self.config = config
+    def __init__(self, protocol, loop):
         self.protocol = protocol
         self.loop = loop
 
-        self.socket, self.address = network.get_adapter_socket(config['nic'])
+        self.socket, self.address = network.get_adapter_socket(config.db['nic'])
 
         self.first_writale = True
         self.last_receive = False
@@ -31,7 +31,7 @@ class RawTransport():
             frames['raw'] = {}
             frames['raw']['payload'] = packet
 
-            parsers = self.config['packet']['parsers']
+            parsers = config.db['packet']['parsers']
             level = 'ether'
             while level:
                 for parser in parsers[level]:
@@ -63,7 +63,7 @@ class RawTransport():
 
     # interface transport
     def send_data(self, frames):
-        builders = self.config['packet']['builders']
+        builders = config.db['packet']['builders']
         level = 'eapol'
         while level:
             for builder in builders[level]:

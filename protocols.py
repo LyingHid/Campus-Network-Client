@@ -5,21 +5,21 @@ import hashlib
 
 from packets import standard
 from packets import ruijie
+import config
 import network
 
 
 class EapProtocol():
-    def __init__(self, config):
-        self.config = config
+    def __init__(self):
         self.transport = None
 
-        config['packet']['parsers']['ether'].insert(0, standard.ether_parser)
-        config['packet']['parsers']['8021x'].insert(0, standard.x8021_parser)
-        config['packet']['parsers']['eapol'].insert(0, standard.eapol_parser)
+        config.db['packet']['parsers']['ether'].insert(0, standard.ether_parser)
+        config.db['packet']['parsers']['8021x'].insert(0, standard.x8021_parser)
+        config.db['packet']['parsers']['eapol'].insert(0, standard.eapol_parser)
 
-        config['packet']['builders']['ether'].insert(0, standard.ether_builder)
-        config['packet']['builders']['8021x'].insert(0, standard.x8021_builder)
-        config['packet']['builders']['eapol'].insert(0, standard.eapol_builder)
+        config.db['packet']['builders']['ether'].insert(0, standard.ether_builder)
+        config.db['packet']['builders']['8021x'].insert(0, standard.x8021_builder)
+        config.db['packet']['builders']['eapol'].insert(0, standard.eapol_builder)
 
 
     # interface protocol
@@ -71,7 +71,7 @@ class EapProtocol():
         frames['ether']['destination'] = src_mac
 
         frames['eapol']['code'    ] = b'\x02'
-        frames['eapol']['identity'] = self.config['user']['username']
+        frames['eapol']['identity'] = config.db['user']['username']
 
         self.transport.send_data(frames)
 
@@ -81,7 +81,7 @@ class EapProtocol():
     def response_md5_challenge(self, frames):
         md5 = hashlib.md5()
         md5.update(frames['eapol']['id'])
-        md5.update(self.config['user']['password'])
+        md5.update(config.db['user']['password'])
         md5.update(frames['eapol']['md5 value'])
 
         src_mac = frames['ether']['source'     ]
@@ -92,7 +92,7 @@ class EapProtocol():
         frames['eapol']['code'] = b'\x02'
         frames['eapol']['md5 value'] = md5.digest()
         if 'md5 extra data' in frames['eapol']:
-            frames['eapol']['md5 extra data'] = self.config['user']['username']
+            frames['eapol']['md5 extra data'] = config.db['user']['username']
 
         self.transport.send_data(frames)
 
@@ -110,8 +110,8 @@ class EapProtocol():
 
 
 class RuijieProtocol(EapProtocol):
-    def __init__(self, config):
-        EapProtocol.__init__(self, config)
+    def __init__(self):
+        EapProtocol.__init__(self)
 
         self.round = 0
         self.dhcp = {}
@@ -120,8 +120,8 @@ class RuijieProtocol(EapProtocol):
         self.dhcp['gateway'] = b'\x00\x00\x00\x00'
         self.dhcp['dns'] = b'\x00\x00\x00\x00'
 
-        config['packet']['parsers']['eapol'].append(ruijie.eapol_parser)
-        config['packet']['builders']['ether'].append(ruijie.ether_builder)
+        config.db['packet']['parsers']['eapol'].append(ruijie.eapol_parser)
+        config.db['packet']['builders']['ether'].append(ruijie.ether_builder)
 
 
     def connection_made(self, transport):
@@ -144,10 +144,10 @@ class RuijieProtocol(EapProtocol):
 
 
     def response_md5_challenge(self, frames):
-        frames['eapol']['md5 extra data'] = self.config['user']['username']
+        frames['eapol']['md5 extra data'] = config.db['user']['username']
         frames['ruijie']['dhcp'] = self.dhcp
-        frames['ruijie']['username'] = self.config['user']['username']
-        frames['ruijie']['password'] = self.config['user']['password']
+        frames['ruijie']['username'] = config.db['user']['username']
+        frames['ruijie']['password'] = config.db['user']['password']
 
         EapProtocol.response_md5_challenge(self, frames)
 
@@ -157,9 +157,9 @@ class RuijieProtocol(EapProtocol):
             self.round += 1
 
             if network.detact_network_manager():
-                network.detach_network_manager(self.config['nic'])
-            network.set_adapter_address(self.config['nic'])
-            self.dhcp = network.get_adapter_dhcp_info(self.config['nic'])
+                network.detach_network_manager(config.db['nic'])
+            network.set_adapter_address(config.db['nic'])
+            self.dhcp = network.get_adapter_dhcp_info(config.db['nic'])
             self.start_eapol({})
         else:
             EapProtocol.response_success(self, frames)
@@ -178,8 +178,8 @@ class RuijieProtocol(EapProtocol):
         print(frames['ruijie']['notice'].decode('gbk').replace('\r\n', '\n').strip())
 
 
-def get_default(config):
+def get_default():
     """ protocol factory
     the factory can be extended to support other schools
     """
-    return RuijieProtocol(config)
+    return RuijieProtocol()
