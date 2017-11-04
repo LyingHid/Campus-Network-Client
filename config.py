@@ -1,7 +1,11 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 
-import json
 import argparse
+import base64
+import pickle
+import sys
+import os
 
 import network
 
@@ -48,11 +52,42 @@ def parse_arguments():
 
 
 def load_from_file():
-    pass
+    global db
+
+    if os.path.isfile(sys.modules[__name__].__file__) is False:
+        return
+
+    directory = os.path.dirname(sys.modules[__name__].__file__)
+    fin = open(directory + '/' + FILE_NAME, 'rb')
+    persist = pickle.load(fin)
+
+    persist['password'] = base64.b64decode(persist['password'])
+
+    if db['user']['username'] is None:
+        db['user']['username'] = persist['username']
+    if db['user']['password'] is None:
+        db['user']['password'] = persist['password']
+    if db['nic'] is None:
+        db['nic'] = persist['nic']
+
+    fin.close()
 
 
 def store_to_file():
-    pass
+    global db
+
+    directory = os.path.dirname(sys.modules[__name__].__file__)
+
+    persist = {}
+    persist['username'] = db['user']['username']
+    persist['password'] = db['user']['password']
+    persist['nic'] = db['nic']
+
+    persist['password'] = base64.b64encode(persist['password'])
+
+    fout = open(directory + '/' + FILE_NAME, 'wb')
+    pickle.dump(persist, fout)
+    fout.close()
 
 
 db = {}
