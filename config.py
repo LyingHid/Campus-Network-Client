@@ -53,12 +53,14 @@ def parse_arguments():
 
 def load_from_file():
     global db
+    
+    path = os.path.dirname(sys.modules[__name__].__file__)
+    path = path + '/' + FILE_NAME
 
-    if os.path.isfile(sys.modules[__name__].__file__) is False:
+    if os.path.isfile(path) is False:
         return
 
-    directory = os.path.dirname(sys.modules[__name__].__file__)
-    fin = open(directory + '/' + FILE_NAME, 'rb')
+    fin = open(path , 'rb')
     persist = pickle.load(fin)
 
     persist['password'] = base64.b64decode(persist['password'])
