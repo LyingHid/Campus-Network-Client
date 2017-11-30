@@ -1,4 +1,5 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 
 import subprocess
 import re
@@ -21,13 +22,17 @@ def get_adapters():
     return adapters
 
 
+def restart_adapter(adapter):
+    command = 'ip link set ' + adapter + ' down'
+    subprocess.run(command.split(), stdout=subprocess.PIPE, encoding='utf-8')
+    command = 'ip link set ' + adapter + ' up'
+    subprocess.run(command.split(), stdout=subprocess.PIPE, encoding='utf-8')
+
+
 def set_adapter_address(adapter):
-    command = 'systemctl status dhcpcd@' + adapter + '.service'
-    result = subprocess.run(command.split(), stdout=subprocess.PIPE, encoding='utf-8')
-    if 'Active: active (running)' in result.stdout:
-        command = 'systemctl restart dhcpcd@' + adapter + '.service'
-    else:
-        command = 'systemctl start dhcpcd@' + adapter + '.service'
+    command = 'dhcpcd -x ' + adapter
+    subprocess.run(command.split(), stdout=subprocess.PIPE, encoding='utf-8')
+    command = 'dhcpcd --waitip ' + adapter
     subprocess.run(command.split(), stdout=subprocess.PIPE, encoding='utf-8')
 
 

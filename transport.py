@@ -13,12 +13,11 @@ class RawTransport():
         self.protocol = protocol
         self.loop = loop
 
-        self.socket, self.address = network.get_adapter_socket(config.db['nic'])
-
         self.first_writale = True
         self.last_receive = False
         self.send_buffer = bytearray()
 
+        self.socket, self.address = network.get_adapter_socket(config.db['nic'])
         self.watcher = eventloop.FileWatcher(self.socket, eventloop.EVENT_WRITE, self.on_events)
         self.loop.register(self.watcher)
 
