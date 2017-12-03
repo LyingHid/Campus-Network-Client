@@ -6,6 +6,7 @@ import base64
 import pickle
 import sys
 import os
+import subprocess
 
 import network
 
@@ -90,6 +91,9 @@ def store_to_file():
     fout = open(directory + '/' + FILE_NAME, 'wb')
     pickle.dump(persist, fout)
     fout.close()
+    
+    command = "chmod 600 " + directory + '/' + FILE_NAME
+    subprocess.run(command.split(), stdout=subprocess.PIPE, encoding='utf-8')
 
 
 db = {}

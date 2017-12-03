@@ -32,7 +32,7 @@ def restart_adapter(adapter):
 def set_adapter_address(adapter):
     command = 'dhcpcd -x ' + adapter
     subprocess.run(command.split(), stdout=subprocess.PIPE, encoding='utf-8')
-    command = 'dhcpcd --waitip ' + adapter
+    command = 'dhcpcd -l 3600 --waitip ' + adapter
     subprocess.run(command.split(), stdout=subprocess.PIPE, encoding='utf-8')
 
 
