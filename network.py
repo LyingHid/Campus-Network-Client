@@ -30,23 +30,33 @@ def restart_adapter(adapter):
 
 
 def set_adapter_address(adapter):
-    command = 'dhcpcd -x ' + adapter
-    subprocess.run(command.split(), stdout=subprocess.PIPE, encoding='utf-8')
-    command = 'dhcpcd -l 3600 --waitip ' + adapter
+    command = 'nmcli connection up ifname ' + adapter
     subprocess.run(command.split(), stdout=subprocess.PIPE, encoding='utf-8')
 
 
 def get_adapter_dhcp_info(adapter):
-    command = 'dhcpcd -U ' + adapter
+    command = 'nmcli -t device show ' + adapter
 
     ip_result = subprocess.run(command.split(), stdout=subprocess.PIPE, encoding='utf-8')
-    ip_result = ip_result.stdout.split('\n');
+
+    ipv4 = re.findall(r"IP4\.ADDRESS\[1\]:(\d+\.\d+\.\d+\.\d+)", ip_result.stdout)[0]
+    mask = re.findall(r"IP4\.ADDRESS\[1\]:\d+\.\d+\.\d+\.\d+/(\d+)", ip_result.stdout)
+    gate = re.findall(r"IP4.GATEWAY:(\d+\.\d+\.\d+\.\d+)", ip_result.stdout)[0]
+    dns1 = re.findall(r"IP4.DNS\[1\]:(\d+\.\d+\.\d+\.\d+)", ip_result.stdout)[0]
+
+    bits = int(mask[0])
+    mask = 0
+    for i in range(32):
+        mask <<= 1
+        if bits:
+            bits -= 1
+            mask += 1
 
     info = {}
-    info['ipv4'] = socket.inet_aton(ip_result[7][11:])
-    info['mask'] = socket.inet_aton(ip_result[11][12:])
-    info['gateway'] = socket.inet_aton(ip_result[9][8:])
-    info['dns'] = socket.inet_aton(ip_result[6][21:].split()[0])
+    info['ipv4'] = socket.inet_aton(ipv4)
+    info['mask'] = struct.pack("!I", mask)
+    info['gateway'] = socket.inet_aton(gate)
+    info['dns'] = socket.inet_aton(dns1)
 
     return info
 

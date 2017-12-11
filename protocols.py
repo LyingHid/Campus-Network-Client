@@ -131,6 +131,8 @@ class RuijieProtocol(EapProtocol):
 
 
     def start_eapol(self, frames):
+        if self.round == 1:
+            network.detach_network_manager(config.db['nic'])
         frames['ruijie'] = {}
         frames['ruijie']['dhcp'] = self.dhcp
 
@@ -153,11 +155,10 @@ class RuijieProtocol(EapProtocol):
 
 
     def response_success(self, frames):
-        if self.round <= 1:
+        if self.round == 1:
             self.round += 1
 
-            if network.detact_network_manager():
-                network.detach_network_manager(config.db['nic'])
+            network.attach_network_manager(config.db['nic'])
             network.set_adapter_address(config.db['nic'])
             self.dhcp = network.get_adapter_dhcp_info(config.db['nic'])
             self.start_eapol({})

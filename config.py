@@ -30,7 +30,6 @@ def parse_arguments():
     parser.add_argument("-p", help="password used in authentication")
     parser.add_argument("-n", help="network interface name")
     parser.add_argument("-l", action='store_true', help="list available network interface")
-    parser.add_argument("-r", help="resume unmanaged device to network manager")
 
     args = parser.parse_args()
 
@@ -38,10 +37,6 @@ def parse_arguments():
         print('available network interface:')
         for adapter in network.get_adapters():
             print(adapter)
-        quit(0)
-    if args.r:
-        print('set ' + args.r + ' managed by network manager')
-        network.attach_network_manager(args.r)
         quit(0)
 
     if args.u:
@@ -54,7 +49,7 @@ def parse_arguments():
 
 def load_from_file():
     global db
-    
+
     path = os.path.dirname(sys.modules[__name__].__file__)
     path = path + '/' + FILE_NAME
 
@@ -91,7 +86,7 @@ def store_to_file():
     fout = open(directory + '/' + FILE_NAME, 'wb')
     pickle.dump(persist, fout)
     fout.close()
-    
+
     command = "chmod 600 " + directory + '/' + FILE_NAME
     subprocess.run(command.split(), stdout=subprocess.PIPE, encoding='utf-8')
 
