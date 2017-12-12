@@ -61,7 +61,7 @@ class EapProtocol():
 
         self.transport.send_data(frames)
 
-        print('start eapol')
+        print('开始认证')
 
 
     def response_id(self, frames):
@@ -75,7 +75,7 @@ class EapProtocol():
 
         self.transport.send_data(frames)
 
-        print('response identity')
+        print('发送用户名')
 
 
     def response_md5_challenge(self, frames):
@@ -96,16 +96,16 @@ class EapProtocol():
 
         self.transport.send_data(frames)
 
-        print('response md5 challenge')
+        print('发送密码')
 
 
     def response_success(self, frames):
-        print('authentication successed')
+        print('认证成功')
         self.transport.lose_connection()
 
 
     def response_failure(self, frames):
-        print('authentication failed')
+        print('认证失败')
         self.transport.lose_connection()
 
 
@@ -158,6 +158,7 @@ class RuijieProtocol(EapProtocol):
         if self.round == 1:
             self.round += 1
 
+            print('获取DHCP信息')
             network.attach_network_manager(config.db['nic'])
             network.set_adapter_address(config.db['nic'])
             self.dhcp = network.get_adapter_dhcp_info(config.db['nic'])
@@ -165,17 +166,20 @@ class RuijieProtocol(EapProtocol):
         else:
             EapProtocol.response_success(self, frames)
 
-            print('notice')
-            print(frames['ruijie']['notice'].decode('gbk').replace('\r\n', '\n').strip())
+            notice = frames['ruijie']['notice'].decode('gbk').replace('\r\n', '\n').strip()
+            if len(notice):
+                print('通知：')
+                print(notice)
+
             if 'bill' in frames['ruijie']:
-                print('bill')
+                print('计费信息：')
                 print(frames['ruijie']['bill'].decode('gbk').strip())
 
 
     def response_failure(self, frames):
         EapProtocol.response_failure(self, frames)
 
-        print('notice')
+        print('通知：')
         print(frames['ruijie']['notice'].decode('gbk').replace('\r\n', '\n').strip())
 
 

@@ -22,13 +22,6 @@ def get_adapters():
     return adapters
 
 
-def restart_adapter(adapter):
-    command = 'ip link set ' + adapter + ' down'
-    subprocess.run(command.split(), stdout=subprocess.PIPE, encoding='utf-8')
-    command = 'ip link set ' + adapter + ' up'
-    subprocess.run(command.split(), stdout=subprocess.PIPE, encoding='utf-8')
-
-
 def set_adapter_address(adapter):
     command = 'nmcli connection up ifname ' + adapter
     subprocess.run(command.split(), stdout=subprocess.PIPE, encoding='utf-8')
